@@ -1,0 +1,9 @@
+opencv-python
+numpy
+pandas
+streamlit
+plotly
+Pillow
+streamlit-cropper
+
+
