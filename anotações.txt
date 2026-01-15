@@ -1,0 +1,4 @@
+1 - redução  para  escala  de cinzas;
+2 - remoção de ruido;
+3 - realce de contraste;
+4 - Treshold;
