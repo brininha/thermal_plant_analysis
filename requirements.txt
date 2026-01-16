@@ -1,9 +1,8 @@
-opencv-python
+opencv-python-headless
 numpy
 pandas
 streamlit
 plotly
 Pillow
 streamlit-cropper
-
-
+fpdf
