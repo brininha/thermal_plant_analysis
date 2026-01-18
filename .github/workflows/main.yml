@@ -1,0 +1,25 @@
+name: Keep Alive Streamlit
+
+on:
+  schedule:
+    # Roda a cada 60 minutos
+    - cron: '0 * * * *'
+  workflow_dispatch: # Permite rodar manualmente se quiser testar
+
+jobs:
+  ping_app:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Instalar dependências
+        run: pip install requests
+
+      - name: Rodar script de ping
+        run: python keep_alive.py
