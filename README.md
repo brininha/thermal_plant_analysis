@@ -1,3 +1,4 @@
+[![Keep Alive Streamlit](https://github.com/brininha/thermal_plant_analysis/actions/workflows/main.yml/badge.svg)](https://github.com/brininha/thermal_plant_analysis/actions/workflows/main.yml)
 # 🌱 Ferramenta de análise térmica de plantas — guia do usuário
 
 Ferramenta para extrair temperatura foliar de imagens FLIR, com seleção semi‑automática e geração de relatórios estatísticos.
