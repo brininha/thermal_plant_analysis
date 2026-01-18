@@ -1,65 +1,78 @@
-[![Keep Alive Streamlit](https://github.com/brininha/thermal_plant_analysis/actions/workflows/main.yml/badge.svg)](https://github.com/brininha/thermal_plant_analysis/actions/workflows/main.yml)
-# 🌱 Ferramenta de análise térmica de plantas — guia do usuário
+[![Keep alive Streamlit](https://github.com/brininha/thermal_plant_analysis/actions/workflows/main.yml/badge.svg)](https://github.com/brininha/thermal_plant_analysis/actions/workflows/main.yml)
 
-Ferramenta para extrair temperatura foliar de imagens FLIR, com seleção semi‑automática e geração de relatórios estatísticos.
+# 🌱 Análise térmica de plantas
+
+Aplicação web desenvolvida em Python para processamento e análise estatística de imagens térmicas de plantas. O sistema automatiza o pareamento de imagens RGB/térmicas, permite segmentação semi-automática e gera relatórios detalhados para pesquisa acadêmica.
+
+> 📘 **Não é desenvolvedor?**
+> [Clique aqui para ler o guia de uso](./USER_GUIDE.md) com o passo a passo de como operar a ferramenta.
 
 ---
 
-## 1. Preparação dos arquivos (importante)
+## 🚀 Funcionalidades
 
-Para o sistema agrupar automaticamente a foto visual (RGB) com a foto térmica (IR) e ler metadados (tratamento, período, etc.), os arquivos devem seguir estritamente o padrão de nomenclatura abaixo, separados por underline (_).
+* **Pareamento inteligente:** Algoritmo que identifica e agrupa automaticamente pares de imagens (visual e térmica) baseados em nomenclatura padronizada.
+* **Segmentação de imagem:** Interface interativa para recorte e remoção de fundo utilizando **OpenCV** (processamento de imagem) e **Streamlit Cropper**.
+* **Extração de dados:** Cálculo automático de temperatura mínima, média, máxima e desvio padrão por amostra.
+* **Dashboard analítico:** Visualização de dados interativa com **Plotly**:
+    * Gráficos de barras agrupados.
+    * Heatmaps de temperatura por tratamento.
+    * Boxplots para detecção de outliers.
+* **Relatórios automatizados:** Geração de PDFs com as imagens processadas e tabelas estatísticas usando **FPDF**.
 
-**Padrão de nomenclatura**
+## 🛠️ Tecnologias utilizadas
+
+* **Linguagem:** Python 3.9+
+* **Frontend/framework:** Streamlit
+* **Processamento de imagem:** OpenCV, Pillow, NumPy
+* **Análise de dados:** Pandas
+* **Visualização:** Plotly Express
+* **Infraestrutura:** GitHub Actions
+
+## 📦 Como rodar localmente
+
+Siga os passos abaixo para executar a aplicação na sua máquina:
+
+### 1. Clonar o repositório
+```bash
+git clone [https://github.com/brininha/thermal_plant_analysis.git](https://github.com/brininha/thermal_plant_analysis.git)
+cd thermal_plant_analysis
 ```
-ID_TempAmbiente_Tratamento_Periodo_Replica_Tipo.jpg
+
+### 2. Criar um ambiente virtual (recomendado)
+
+```bash
+# Windows
+python -m venv .venv
+.venv\Scripts\activate
+
+# Linux/Mac
+python3 -m venv .venv
+source .venv/bin/activate
 ```
 
-- ID: identificador único da planta (ex.: `P01`, `Planta10`).  
-- TempAmbiente: temperatura da estufa/câmara no momento da foto (ex.: `21`, `27`, `35`, `45`). essencial para calibração automática.  
-- Tratamento: grupo experimental (ex.: `controle`, `heatstress`, `recovery`).  
-- Periodo: momento da coleta (ex.: `Dia`, `Noite`, `Manha`).  
-- Replica: número da réplica (ex.: `R1`, `R2`).  
-- Tipo: deve terminar com `thermal` ou `visual`.
+### 3. Instalar dependências
 
-Exemplos válidos:
-- `P05_27_Controle_Dia_R1_visual.jpg`  
-- `P05_27_Controle_Dia_R1_thermal.jpg`
+```bash
+pip install -r requirements.txt
+```
 
----
+### 4. Executar a aplicação
 
-## 2. Passo a passo de uso
+O arquivo principal da aplicação é o app_completo.py.
 
-### Passo 1 — Upload
-1. Abra a aplicação no navegador.  
-2. Na barra lateral, faça upload dos arquivos (aceita múltiplos).  
-Dica: arraste dezenas de arquivos; o sistema agrupa pares automaticamente.
+```bash
+streamlit run app_completo.py
+```
 
-### Passo 2 — Editor de recorte
-- Esquerda: imagem visual (referência).  
-- Direita: imagem térmica com retângulo de seleção.  
-Ajuste o retângulo para cobrir a planta e clique em **Confirmar**. O algoritmo remove fundo automaticamente dentro da seleção. O sistema salva os dados e passa para a próxima amostra.
+## 📂 Estrutura do projeto
 
-### Passo 3 — Dashboard e análise
-Abra a aba **Dashboard completo** para visualizar:
-- Gráfico de barras: média de temperatura por tratamento e período.  
-- Heatmap: matriz (Tratamento × Período) das médias.  
-- Boxplot: distribuição e pontos individuais (plantas).
+- `app_completo.py`: Código fonte principal contendo a lógica da interface, processamento de imagem e geração de gráficos.
 
----
+- `requirements.txt`: Lista de bibliotecas necessárias.
 
-## 3. Exportando resultados
+- `keep_alive.py`: Script de automação para manter o servidor ativo.
 
-Na seção **Relatório e exportação** do dashboard:
+- `.github/workflows`: Configuração do GitHub Actions para monitoramento.
 
-- **Baixar tabela (CSV)**: exporta dados brutos (média, máxima, mínima, desvio padrão).  
-- **Gerar relatório PDF**: gera PDF com, para cada amostra:
-  - foto visual original;  
-  - recorte térmico processado;  
-  - tabela de estatísticas.
-
----
-
-## Observações e dicas
-- Use nomes consistentes para evitar falhas no pareamento automático.  
-- TempAmbiente fora dos valores previstos usa escala padrão.  
-- Recomenda‑se imagens com boa resolução para melhores resultados.
+- `USER_GUIDE.md`: Guia para operação do software.
