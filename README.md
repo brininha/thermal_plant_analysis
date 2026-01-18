@@ -1,4 +1,4 @@
-[![Keep alive Streamlit](https://github.com/brininha/thermal_plant_analysis/actions/workflows/main.yml/badge.svg)](https://github.com/brininha/thermal_plant_analysis/actions/workflows/main.yml)
+[![Keep alive Streamlit](https://github.com/brininha/thermal_plant_analysis/actions/workflows/keep_alive.yml/badge.svg)](https://github.com/brininha/thermal_plant_analysis/actions/workflows/keep_alive.yml)
 
 # 🌱 Análise térmica de plantas
 
