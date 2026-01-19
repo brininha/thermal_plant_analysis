@@ -3,7 +3,7 @@ name: Keep Alive Streamlit
 on:
   schedule:
     # Roda a cada 60 minutos
-    - cron: '0 * * * *'
+    - cron: '*/15 * * * *'
   workflow_dispatch: # Permite rodar manualmente se quiser testar
 
 jobs:
