@@ -1,8 +1,9 @@
+streamlit>=1.35.0
 opencv-python-headless
 numpy
 pandas
-streamlit
 plotly
 Pillow
 streamlit-cropper
 fpdf
+altair<5
