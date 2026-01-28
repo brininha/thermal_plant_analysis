@@ -14,8 +14,8 @@ st.set_page_config(page_title="Análise térmica de plantas", layout="wide", pag
 
 # Calibração
 ESCALAS_CAMERA = {
-    '21': (15.0, 25.0), '27': (20.0, 35.0),
-    '35': (25.0, 45.0), '45': (35.0, 55.0),
+    '21': (23.0, 16.8), '27': (31.8, 25.7),
+    '35': (35.0, 28.9), '45': (49.1, 37.0),
 }
 ESCALA_PADRAO = (20.0, 40.0)
 
