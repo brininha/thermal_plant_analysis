@@ -69,23 +69,56 @@ def organizar_pares(uploaded_files):
     return [p for p in pares.values() if p['thermal'] is not None]
 
 def processar_termica(img_pil_recortada, temp_ambiente):
+    """
+    Função ajustada:
+    1. Usa grayscale APENAS para criar a máscara (recortar o fundo).
+    2. Usa a COR (HSV) para calcular a temperatura se a imagem for colorida.
+    """
     img = np.array(img_pil_recortada)
-    if len(img.shape) == 3: img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    else: img_gray = img
+    
+    # 1. Segmentação (Mantém a lógica original de usar cinza para achar o recorte)
+    if len(img.shape) == 3: 
+        img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    else: 
+        img_gray = img
     
     blur = cv2.GaussianBlur(img_gray, (5,5), 0)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
     img_cont = clahe.apply(blur)
     _, mask = cv2.threshold(img_cont, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     
-    pixels = img_gray[mask > 0]
-    if len(pixels) < 10: pixels = img_gray.flatten()
+    # 2. Extração de Temperatura (Nova lógica para Rainbow Palette)
     
+    # Define limites de temperatura
     t_min, t_max = ESCALA_PADRAO
     if temp_ambiente in ESCALAS_CAMERA:
         t_min, t_max = ESCALAS_CAMERA[temp_ambiente]
+
+    if len(img.shape) == 3:
+        # Lógica NOVA: Usa Matiz (Hue) do sistema HSV
+        # Vermelho (Quente) = Hue 0 ou 180
+        # Azul (Frio) = Hue 120 (no OpenCV o range é 0-180)
         
-    temps = [pixel_para_temp(p, t_min, t_max) for p in pixels]
+        img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+        hue = img_hsv[:, :, 0].astype(float) # Pega só o canal de cor
+        
+        # Pega os pixels dentro da máscara
+        pixels_hue = hue[mask > 0]
+        if len(pixels_hue) < 10: pixels_hue = hue.flatten()
+        
+        # Limita o range para evitar ruídos de violeta (>120)
+        pixels_hue = np.clip(pixels_hue, 0, 120)
+        
+        # Cálculo: (120 - Hue) / 120  --> Vai dar 1.0 se for vermelho(0) e 0.0 se for azul(120)
+        fator = (120.0 - pixels_hue) / 120.0
+        
+        temps = t_min + fator * (t_max - t_min)
+        
+    else:
+        # Lógica ORIGINAL (Fallback para imagens P&B reais)
+        pixels = img_gray[mask > 0]
+        if len(pixels) < 10: pixels = img_gray.flatten()
+        temps = [pixel_para_temp(p, t_min, t_max) for p in pixels]
     
     return {
         'Temp_Media': np.mean(temps), 'Temp_Max': np.max(temps),
@@ -193,7 +226,7 @@ with tab_edit:
                     st.session_state['idx'] += 1
                     st.rerun()
         else:
-            st.success("Imagens processadas! Vá para o Dashboard.")
+            st.success("Imagens processadas! Vá para o dashboard.")
     else:
         st.info("Aguardando imagens...")
 
