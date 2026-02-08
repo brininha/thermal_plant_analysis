@@ -9,6 +9,7 @@ from streamlit_cropper import st_cropper
 from fpdf import FPDF
 import tempfile
 import os
+import shutil
 
 # --- IMPORTAÇÃO DA BIBLIOTECA RADIOMÉTRICA ---
 try:
@@ -83,7 +84,8 @@ def processar_termica_radiometrica(img_crop_pil, img_full_pil, arquivo_original)
         tmp_path = tmp.name
 
     try:
-        flir = FlirImageExtractor(is_debug=False)
+        exiftool_path = shutil.which("exiftool")
+        flir = FlirImageExtractor(exiftool_path=exiftool_path, is_debug=False)
         flir.process_image(tmp_path)
         matriz_termica = flir.get_thermal_np()
     except Exception as e:
