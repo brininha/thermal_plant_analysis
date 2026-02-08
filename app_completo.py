@@ -9,11 +9,10 @@ from streamlit_cropper import st_cropper
 from fpdf import FPDF
 import tempfile
 import os
-import shutil
 
 # --- IMPORTAÇÃO DA BIBLIOTECA RADIOMÉTRICA ---
 try:
-    from flirimageextractor import FlirImageExtractor
+    from flir_utils import FlirImageExtractor
 except ImportError:
     st.error("Biblioteca 'flirimageextractor' não encontrada. Instale com: pip install flirimageextractor")
 
@@ -84,8 +83,7 @@ def processar_termica_radiometrica(img_crop_pil, img_full_pil, arquivo_original)
         tmp_path = tmp.name
 
     try:
-        exiftool_path = shutil.which("exiftool")
-        flir = FlirImageExtractor(exiftool_path=exiftool_path, is_debug=False)
+        flir = FlirImageExtractor(is_debug=True)
         flir.process_image(tmp_path)
         matriz_termica = flir.get_thermal_np()
     except Exception as e:
