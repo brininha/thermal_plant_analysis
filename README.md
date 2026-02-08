@@ -2,28 +2,33 @@
 
 # 🌱 Análise térmica de plantas
 
-Aplicação web desenvolvida em Python para processamento e análise estatística de imagens térmicas de plantas. O sistema automatiza o pareamento de imagens RGB/térmicas, permite segmentação semi-automática e gera relatórios detalhados para pesquisa acadêmica.
+Aplicação web desenvolvida em Python para processamento e análise estatística de imagens térmicas de plantas. O sistema automatiza o pareamento de imagens RGB/térmicas, permite segmentação manual e gera relatórios detalhados para pesquisa acadêmica.
 
-> 📘 **Não é desenvolvedor?**
-> [Clique aqui para ler o guia de uso](./USER_GUIDE.md) com o passo a passo de como operar a ferramenta.
+> 📘 **Guia de uso**
+> [Clique aqui para ler o manual do usuário](./USER_GUIDE.md) com o passo a passo de operação.
+>
+> 🧠 **Documentação técnica**
+> [Leia este registro](./DEV_DOCUMENTATION.md) para entender a lógica dos algoritmos e a evolução do projeto.
 
 ---
 
 ## 🚀 Funcionalidades
 
 * **Pareamento inteligente:** Algoritmo que identifica e agrupa automaticamente pares de imagens (visual e térmica) baseados em nomenclatura padronizada.
-* **Segmentação de imagem:** Interface interativa para recorte e remoção de fundo utilizando **OpenCV** (processamento de imagem) e **Streamlit Cropper**.
-* **Extração de dados:** Cálculo automático de temperatura mínima, média, máxima e desvio padrão por amostra.
-* **Dashboard analítico:** Visualização de dados interativa com **Plotly**:
+* **Segmentação de imagem:** Interface interativa para recorte e remoção de fundo utilizando *OpenCV* (processamento de imagem) e *Streamlit Cropper*.
+* **Extração de dados**: Processamento direto dos metadados brutos da câmera FLIR, garantindo temperaturas exatas ($^{\circ}C$) sem depender da escala de cores visual.
+* **Análise estatística**: Cálculo automático de temperatura mínima, média, máxima e desvio padrão diretamente da matriz de sensores.
+* **Dashboard analítico:** Visualização de dados interativa com *Plotly*:
     * Gráficos de barras agrupados.
     * Heatmaps de temperatura por tratamento.
     * Boxplots para detecção de outliers.
-* **Relatórios automatizados:** Geração de PDFs com as imagens processadas e tabelas estatísticas usando **FPDF**.
+* **Relatórios automatizados:** Geração de PDFs com as imagens processadas e tabelas estatísticas usando *FPDF*.
 
 ## 🛠️ Tecnologias utilizadas
 
 * **Linguagem:** Python 3.9+
 * **Frontend/framework:** Streamlit
+* **Radiometria:** FlirImageExtractor (com ExifTool)
 * **Processamento de imagem:** OpenCV, Pillow, NumPy
 * **Análise de dados:** Pandas
 * **Visualização:** Plotly Express
@@ -76,3 +81,5 @@ streamlit run app_completo.py
 - `.github/workflows`: Configuração do GitHub Actions para monitoramento.
 
 - `USER_GUIDE.md`: Guia para operação do software.
+  
+- `DEV_DOCUMENTATION.md`: Documentação técnica detalhada sobre a validação dos algoritmos e a migração para análise radiométrica.

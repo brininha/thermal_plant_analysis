@@ -1,9 +1,11 @@
-streamlit>=1.35.0
-opencv-python-headless
-numpy
+streamlit
 pandas
+numpy
 plotly
+flirimageextractor
+opencv-python-headless
 Pillow
 streamlit-cropper
 fpdf
-altair<5
+matplotlib
+scipy
