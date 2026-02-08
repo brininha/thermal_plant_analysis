@@ -2,7 +2,7 @@
 
 # 🌱 Análise térmica de plantas
 
-Aplicação web desenvolvida em Python para processamento e análise estatística de imagens térmicas de plantas. O sistema automatiza o pareamento de imagens RGB/térmicas, permite segmentação semi-automática e gera relatórios detalhados para pesquisa acadêmica.
+Aplicação web desenvolvida em Python para processamento e análise estatística de imagens térmicas de plantas. O sistema automatiza o pareamento de imagens RGB/térmicas, permite segmentação manual e gera relatórios detalhados para pesquisa acadêmica.
 
 > 📘 **Guia de uso**
 > [Clique aqui para ler o manual do usuário](./USER_GUIDE.md) com o passo a passo de operação.

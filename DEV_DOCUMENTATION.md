@@ -12,9 +12,9 @@
 ## Sumário
 
 1. [Histórico de versões e explicação das mudanças](#1-histórico-de-versões-e-explicação-das-mudanças)
-    - [1.1 Versão 1.0 — segmentação por cor (RGB)](#11-versão-10--segmentação-por-cor-rgb)
-    - [1.2 Versão 2.0 — remoção de fundo por IA](#12-versão-20--remoção-de-fundo-por-ia)
-    - [1.3 Versão 3.0 — mapeamento HSV e recorte automático](#13-versão-30--mapeamento-hsv-e-recorte-automático)
+    - [1.1 Versão 1.0: segmentação por cor (RGB)](#11-versão-10-segmentação-por-cor-rgb)
+    - [1.2 Versão 2.0: remoção de fundo por IA](#12-versão-20-remoção-de-fundo-por-ia)
+    - [1.3 Versão 3.0: mapeamento HSV e recorte automático](#13-versão-30-mapeamento-hsv-e-recorte-automático)
 2. [Versão atual: extração de dados radiométricos](#2-versão-atual-extração-de-dados-radiométricos)
     - [2.1 Entendendo a câmera](#21-entendendo-a-câmera)
     - [2.2 Lógica de execução](#22-lógica-de-execução)
@@ -27,7 +27,7 @@
 
 ## 1 Histórico de versões e explicação das mudanças
 
-### 1.1 Versão 1.0 — segmentação por cor (RGB)
+### 1.1 Versão 1.0: segmentação por cor (RGB)
 
 <small>Sem datas de lançamento e descontinuação.</small>
 
@@ -47,7 +47,7 @@
 
 <br>
 
-### 1.2 Versão 2.0 — remoção de fundo por IA
+### 1.2 Versão 2.0: remoção de fundo por IA
 <small>Sem datas de lançamento e descontinuação.</small>
 
 > Status: essa versão foi descartada por apresentar falhas no método de segmentação.
@@ -64,7 +64,7 @@
 
 <br>
 
-### 1.3 Versão 3.0 — mapeamento HSV e recorte automático
+### 1.3 Versão 3.0: mapeamento HSV e recorte automático
 <small>Data de lançamento: 16/01/2026 | Data de descontinuação: 09/02/2026</small>
 > Status: essa foi a primeira versão disponibilizada para uso, mas foi descontinuada devido a inconsistências matemáticas.
 
@@ -312,8 +312,7 @@ stats = {
 | ![alt text](images/image-17.png) |
 |<small><b>Validação numérica do algoritmo.</b> A coincidência entre os valores estatísticos extraídos pelo software e os parâmetros nativos da imagem de controle confirma a precisão na leitura da matriz de sensores.</small>|
 
-> Comentário: 
-
+> Nota: Para conferência rápida da calibração, recomenda-se capturar imagens térmicas da face humana. Regiões vascularizadas como o canto interno do olho ou a testa possuem temperatura superficial estável, tipicamente entre $34^{\circ}C$ e $36^{\circ}C$. A obtenção de valores dentro deste intervalo pelo software serve como prova da coerência dos dados radiométricos.
 ---
 
 ## 3 Planejamento futuro
@@ -334,7 +333,7 @@ stats = {
 - Sempre preferir metadados quando disponíveis.
 - Automatizações futuras devem incluir validação robusta de máscara e registro espacial entre imagens visual e térmica.
 
-&nbsp;&nbsp;&nbsp;O código-fonte completo deste projeto, incluindo histórico de versões e ferramentas de validação, está hospedado publicamente no GitHub: github.com/brininha/thermal_plant_analysis
+&nbsp;&nbsp;&nbsp;O código-fonte completo deste projeto, incluindo histórico de versões e ferramentas de validação, está hospedado no GitHub: github.com/brininha/thermal_plant_analysis
 
 ---
 
