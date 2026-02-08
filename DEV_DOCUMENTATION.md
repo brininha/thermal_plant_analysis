@@ -72,11 +72,14 @@
 
 &nbsp;&nbsp;&nbsp;Em primeiro lugar, decidiu-se realizar a conversão do espaço de cor padrão das imagens (RGB) para o sistema HSV. O que motivou essa escolha foi a estrutura dos dados, o sistema RGB mistura informação de cor e luminosidade em três canais que variam de forma não linear, o que dificulta associar um valor numérico à temperatura. Observe o comportamento dos canais RGB nas cores primárias:
 
-$$
-Azul: (R=0, G=0, B=255)\\
-Verde: (R=0, G=255, B=0)\\
+```
+Azul: (R=0, G=0, B=255)
+
+Verde: (R=0, G=255, B=0)
+
 Vermelho: (R=255, G=0, B=0)
-$$
+```
+
 
 &nbsp;&nbsp;&nbsp;Como se nota acima, não há um crescimento numérico único que acompanhe o aumento da temperatura. Já o sistema HSV foi desenhado para organizar as cores de forma sequencial, isolando a cor do brilho. Portanto, a ideia era de que ao percorrer o canal *hue* dos valores altos (azuis) para os baixos (vermelhos), seria obtida uma função linearmente proporcional à temperatura.
 
@@ -158,6 +161,7 @@ $$
 &nbsp;&nbsp;&nbsp;O software desenvolvido opera sob a arquitetura *Streamlit*. Abaixo descreve-se o fluxo de execução, desde a inicialização das bibliotecas até a geração dos relatórios finais.
 
 <b> 2.2.1 Inicialização e carregamento de bibliotecas </b>
+
 &nbsp;&nbsp;&nbsp;Ao iniciar, o sistema carrega as bibliotecas essenciais de manipulação de dados (*pandas*, *numpy*) e processamento de imagem (*cv2*, *PIL*). O ponto crítico nesta etapa é a importação da engine radiométrica. O código verifica a existência da biblioteca *flirimageextractor* [5], responsável por decodificar os metadados binários da FLIR.
 
 ```python
@@ -202,11 +206,13 @@ img_crop = st_cropper(img_therm_full, realtime_update=True, box_color='#FF0000',
 ```
 
 <b> 2.2.4 Processamento da imagem térmica </b>
+
 &nbsp;&nbsp;&nbsp;Ao clicar em "Confirmar", o sistema executa a função mais complexa do código. Ela converte o recorte visual em dados de temperatura. Este processo ocorre em 4 subetapas:
 
 <small>
 
 <b>2.2.4.1 Extração da matriz bruta</b>
+
 &nbsp;&nbsp;&nbsp;O arquivo JPG original é salvo temporariamente e lido pelo extrator, que ignora a imagem visual e acessa o sensor térmico, retornando uma matriz com valores de ponto flutuante ($^{\circ}C$).
 
 > Nota: na programação, os valores de ponto flutuante (*float type*) representam números com casas decimais.
@@ -219,6 +225,7 @@ matriz_termica = flir.get_thermal_np() # Retorna array numpy com temperaturas re
 ```
 
 <b>2.2.4.2 Sincronização espacial</b>
+
 &nbsp;&nbsp;&nbsp;Como descoberto na análise minuciosa da versão 3, a matriz térmica real (ex: 80x60) é muito menor que a imagem exibida na tela (320x240 interpolada). Para que o recorte do usuário coincida com os dados, a matriz térmica bruta é redimensionada para corresponder às dimensões da imagem visual.
 
 ```python
@@ -227,6 +234,7 @@ matriz_termica = cv2.resize(matriz_termica, (w_vis, h_vis), interpolation=cv2.IN
 ```
 
 <b>2.2.4.3 Localização de recorte</b>
+
 &nbsp;&nbsp;&nbsp;O sistema utiliza o algoritmo de *template matching* [6] (correspondência de modelo, em português) para descobrir onde exatamente, na imagem original, o usuário fez o recorte. Ele procura a imagem recortada dentro da imagem original para obter as coordenadas $(x, y)$.
 
 ```python
@@ -237,6 +245,7 @@ x, y = max_loc # Coordenadas reais do recorte
 ```
 
 <b>2.2.4.4 Extração estatística</b>
+
 &nbsp;&nbsp;&nbsp;Com as coordenadas exatas, o sistema fatia a matriz de temperaturas (não a imagem de cores). A partir desse subconjunto de dados puros, calculam-se as estatísticas descritivas.
 
 ```python
@@ -254,11 +263,13 @@ stats = {
 </small>
 
 <b> 2.2.5 Visualização analítica </b>
+
 &nbsp;&nbsp;&nbsp;Após o processamento de todas as imagens, os dados são consolidados em um *dataframe* do *pandas*. A aba "Dashboard" gera visualizações interativas. Uma funcionalidade nova desenvolvida nesta etapa foi a ferramenta de inspeção de pixels.
 
 &nbsp;&nbsp;&nbsp;Para garantir que os pesquisadores possam validar visualmente os dados numéricos, utilizou-se a biblioteca *Plotly* para renderizar a matriz térmica bruta como um mapa de calor interativo. Diferente de uma imagem estática (PNG/JPG), este gráfico é gerado diretamente a partir do array *numpy* de ponto flutuante. A lógica de implementação define um modelo de interação que, ao detectar o cursor do mouse sobre uma célula $(x, y)$ da grade, exibe instantaneamente o valor $z$ (temperatura) correspondente, com precisão de duas casas decimais.
 
 <b> 2.2.6 Exportação e relatório final </b>
+
 &nbsp;&nbsp;&nbsp;Por fim, a função `gerar_pdf_final` une todas as evidências. Ela gera um documento PDF onde, para cada amostra, são apresentadas três visualizações lado a lado: a foto visual, o recorte térmico e o mapa de calor radiométrico gerado matematicamente, garantindo a rastreabilidade total do dado.
 
 ### 2.3 Validação da ferramenta
@@ -267,6 +278,7 @@ stats = {
 > Nota: essa ferramenta foi criada apenas para provar os resultados obtidos, entre em contato com a desenvolvedora se quiser usá-la.
 
 <b> 2.3.1 Provando a ingestão dos dados brutos </b>
+
 &nbsp;&nbsp;&nbsp;A primeira validação confirma que o sistema está lendo dados físicos de temperatura e não valores de cor. Conforme observado na figura 13, o histograma dos dados extraídos (painel B) apresenta uma distribuição de valores contínuos de ponto flutuante (ex: $24.5^{\circ}C$ a $31.2^{\circ}C$). Isso contrasta com a natureza discreta de imagens digitais (inteiros de 0 a 255), comprovando que a biblioteca radiométrica acessou com sucesso o sensor térmico.
 
 |Figura 13|
@@ -275,6 +287,7 @@ stats = {
 |<small><b>Validação da ingestão de dados.</b> (A) Visualização da matriz térmica bruta ($80 \times 60$ pixels). (B) O histograma confirma que os dados são grandezas físicas de temperatura ($^{\circ}C$) com variação decimal, e não níveis de cinza.</small>|
 
 <b> 2.3.2 Provando a sincronização espacial </b>
+
 &nbsp;&nbsp;&nbsp;A inspeção revelou que o sensor nativo da câmera possui resolução de $80 \times 60$ pixels, enquanto a imagem visual de referência possui $320 \times 240$ pixels. Para permitir o recorte manual preciso, o sistema realiza uma reamostragem espacial da matriz térmica. A figura 14 demonstra o alinhamento dimensional, onde a matriz térmica (direita) é redimensionada para coincidir pixel a pixel com a imagem visual (esquerda), sem alterar os valores de temperatura.
 
 |Figura 14|
@@ -292,6 +305,7 @@ stats = {
 |<small><b>Geometria de extração.</b> O algoritmo varre a matriz térmica em busca do padrão visual recortado. O destaque em vermelho confirma que o software localizou corretamente as coordenadas $(x, y)$ da amostra na matriz de dados.</small>|
 
 <b> 2.3.4 Provando a análise da matriz </b>
+
 &nbsp;&nbsp;&nbsp;A prova definitiva da eficácia do método reside na inspeção individual dos pixels. A figura 16 apresenta uma visualização aumentada sobre os primeiros $10 \times 10$ pixels da região recortada. A visualização numérica comprova que cada célula da matriz possui um valor de temperatura único e independente (ex: um pixel a $24.8^{\circ}C$ adjacente a um de $25.1^{\circ}C$). Isso valida a sensibilidade do método para detectar sutis variações térmicas na superfície foliar, difíceis de serem registradas por métodos baseados em cor.
 
 | Figura 16 |
@@ -300,6 +314,7 @@ stats = {
 |<small><b>Micro-análise matricial.</b> Mapa de calor numérico de uma amostra de $10 \times 10$ pixels. A presença de valores decimais distintos em pixels adjacentes comprova a extração de dados físicos reais e a alta precisão do método final.</small>|
 
 <b> 2.3.5 Validação externa </b>
+
 &nbsp;&nbsp;&nbsp;Além da validação interna, o algoritmo foi submetido a um teste utilizando imagens de referência radiométricas padronizadas do modelo FLIR AX8 ([disponível no repositório oficial](https://github.com/nationaldronesau/FlirImageExtractor/blob/master/examples/ax8.jpg)). O software foi capaz de extrair as temperaturas equivalentes dos metadados da imagem de controle (com desvio desprezível de arredondamento decimal), confirmando que a leitura independe do hardware específico utilizado e que os cálculos estão calibrados com padrões da indústria. Compare as temperaturas definidas na imagem térmica com as obtidas:
 
 | Figura 17 |
