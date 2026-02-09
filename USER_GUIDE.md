@@ -2,43 +2,45 @@
 
 Ferramenta para extrair temperatura foliar de imagens FLIR, utilizando processamento radiométrico e geração de relatórios estatísticos.
 
+---
+
 ## 1. Instalação e inicialização
 
 O software foi preparado para rodar localmente no seu computador, garantindo performance e privacidade dos dados.
 
-### Para usuários Windows
-Esta versão não requer instalação técnica.
+### Para usuários Windows (recomendado)
 
-1.  **Baixar e extrair**:
+1.  **Download**:
     * Baixe o arquivo `software_analise_termica.zip`.
-    * **Importante:** Não abra direto do ZIP. Clique com o botão direito no arquivo e escolha **"Extrair tudo"** (Extract all).
-2.  **Iniciar**:
-    * Abra a pasta extraída.
-    * Dê um clique duplo no arquivo **`Iniciar.bat`** (pode aparecer apenas como `Iniciar`).
-    * *Nota:* Se o Windows exibir um aviso de proteção, clique em **Mais informações** > **Executar assim mesmo**.
-3.  **Primeiro Uso**:
-    * Uma janela preta (terminal) se abrirá. **Não a feche.**
-    * Na primeira vez, o sistema levará alguns minutos para configurar o ambiente. Nas próximas, será instantâneo.
-    * O navegador abrirá automaticamente com o software pronto.
+    * *Nota:* O arquivo tem cerca de **700 MB** pois contém todo o motor de processamento embutido.
 
-### Para usuários Mac e Linux (via terminal)
-Como o script automático (`.bat`) é exclusivo para Windows, siga estes passos:
+2.  **Extração**:
+    * **Não abra** o programa direto de dentro do arquivo ZIP.
+    * Clique com o botão direito no arquivo baixado e selecione **"Extrair tudo..."** (Extract all). Escolha uma pasta de sua preferência.
+
+3.  **Iniciar**:
+    * Entre na pasta extraída `software_analise_termica`.
+    * Dê um clique duplo no arquivo **`Iniciar.bat`**.
+    * *Dica:* Se quiser um atalho na Área de Trabalho, clique com o botão direito no `Iniciar.bat` > Enviar para > Área de Trabalho (criar atalho). **Não arraste o arquivo original para fora da pasta.**
+
+4.  **Uso**:
+    * Uma janela preta (terminal) abrirá. **Não a feche**, ela é o motor do sistema.
+    * O navegador abrirá automaticamente com a ferramenta pronta para uso.
+  
+
+### Para usuários Mac e Linux (avançado)
+O pacote automático (`.bat`) é exclusivo para Windows. Em outros sistemas, siga estes passos manuais:
 
 1.  **Pré-requisitos**:
     * Tenha o **Python 3.10+** instalado.
     * Instale a ferramenta **ExifTool**:
-        * **Mac (via Homebrew):** `brew install exiftool`
-        * **Linux (Ubuntu/Debian):** `sudo apt-get install libimage-exiftool-perl`
+        * Mac: `brew install exiftool`
+        * Linux: `sudo apt-get install libimage-exiftool-perl`
+
 2.  **Execução**:
-    * Abra o terminal na pasta descompactada do projeto.
-    * Instale as bibliotecas (apenas na 1ª vez):
-        ```bash
-        pip install -r requirements.txt
-        ```
-    * Inicie o software:
-        ```bash
-        streamlit run app_completo.py
-        ```
+    * Abra o terminal na pasta do projeto.
+    * Instale as dependências: `pip install -r requirements.txt`
+    * Rode o comando: `streamlit run app_completo.py`
 
 ---
 
@@ -101,7 +103,7 @@ Na seção **Relatório e exportação** do dashboard:
 
 ---
 
-## Observações e dicas
+## 5. Observações e dicas
 - Use nomes consistentes para evitar falhas no pareamento automático.  
 - Recomenda‑se imagens com boa resolução para melhores resultados (essa dica será útil para a próxima versão de segmentação automática).
 - Se você subir uma imagem thermal sem a correspondente visual (ou vice-versa), o sistema avisará e ela não será processada.
