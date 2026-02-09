@@ -2,56 +2,53 @@ import shutil
 import subprocess
 import sys
 import os
+import numpy as np
 
-# 1. Encontra o ExifTool do sistema (instalado pelo packages.txt)
-system_exiftool = shutil.which("exiftool")
-
-if not system_exiftool:
-    raise RuntimeError("ERRO CRÍTICO: ExifTool não encontrado no sistema Linux.")
-
-# 2. Hack para enganar a biblioteca ANTES de importá-la
-# Dizemos ao Python que se alguém perguntar pelo caminho do ffmpeg/exiftool, é esse aqui:
-os.environ["EXIFTOOL_PATH"] = system_exiftool
-
+# Tenta importar a biblioteca original
 try:
-    # Tenta importar a biblioteca original
     from flirimageextractor import FlirImageExtractor as OriginalFlir
 except ImportError:
-    # Se não estiver instalada, avisa
-    raise ImportError("A biblioteca 'flirimageextractor' não está no requirements.txt!")
+    raise RuntimeError("A biblioteca 'flirimageextractor' não está instalada! Verifique o requirements.txt.")
 
-# 3. Criamos uma classe segura para a Nuvem
 class FlirImageExtractor(OriginalFlir):
     def __init__(self, exiftool_path=None, is_debug=False):
-        # AQUI ESTÁ O TRUQUE:
-        # Não chamamos o __init__ original imediatamente porque ele tenta criar pastas.
-        # Nós configuramos manualmente as variáveis que ele precisa.
-        
-        self.exiftool_path = system_exiftool
+        """
+        Inicialização 'Cloud-Safe': Copia as variáveis da biblioteca original,
+        mas NÃO executa o código de criação de pastas proibidas.
+        """
+        # 1. Configura o ExifTool (essencial)
+        self.exiftool_path = exiftool_path if exiftool_path else shutil.which("exiftool")
+        if not self.exiftool_path:
+            raise RuntimeError("ExifTool não encontrado! Verifique se 'packages.txt' contém 'exiftool'.")
+
+        # 2. Configura variáveis internas (Copiado da original, mas sem instalar nada)
         self.is_debug = is_debug
         self.thermal_image_np = None
+        self.rgb_image_np = None
         self.metadata = {}
-        self.default_csv_path = "/tmp" # Muda para pasta temporária (permitida na nuvem)
         
-        # Agora inicializamos apenas a parte de processamento, pulando a instalação
-        # Se a biblioteca tiver métodos de setup internos seguros, podemos chamá-los,
-        # mas a flirimageextractor é simples, configurar o path acima já resolve.
+        # Variáveis de configuração padrão da biblioteca
+        self.use_thermal_pixel_values = True 
+        self.fix_thermal_pixel_values = True
+        
+        # IMPORTANTE: Não chamamos super().__init__()!
+        # É lá que mora o erro de permissão [Errno 13].
+        # Como já configuramos as variáveis acima, não precisamos dele.
 
     def check_for_exiftool(self):
-        # Sobrescrevemos o método de verificação para ele sempre dizer "SIM"
-        # e nunca tentar baixar nada.
+        # Sobrescreve a checagem para evitar downloads
         return True
 
     def process_image(self, image_path):
         """
-        Wrapper seguro para o processamento original
+        Executa o processamento usando a lógica da biblioteca original.
         """
-        # Chama o método original da biblioteca, mas agora seguro
+        # O método process_image da original usa self.exiftool_path e subprocess.
+        # Como configuramos isso manualmente no __init__ acima, vai funcionar!
         super().process_image(image_path)
-        
+
     def get_thermal_np(self):
         """
-        Retorna a matriz térmica usando a fórmula original da biblioteca
+        Retorna a matriz térmica usando a fórmula matemática da biblioteca original.
         """
-        # A biblioteca original salva em self.thermal_image_np
         return super().get_thermal_np()
