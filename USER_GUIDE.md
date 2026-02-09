@@ -2,9 +2,47 @@
 
 Ferramenta para extrair temperatura foliar de imagens FLIR, utilizando processamento radiométrico e geração de relatórios estatísticos.
 
+## 1. Instalação e inicialização
+
+O software foi preparado para rodar localmente no seu computador, garantindo performance e privacidade dos dados.
+
+### Para usuários Windows
+Esta versão não requer instalação técnica.
+
+1.  **Baixar e extrair**:
+    * Baixe o arquivo `software_analise_termica.zip`.
+    * **Importante:** Não abra direto do ZIP. Clique com o botão direito no arquivo e escolha **"Extrair tudo"** (Extract all).
+2.  **Iniciar**:
+    * Abra a pasta extraída.
+    * Dê um clique duplo no arquivo **`Iniciar.bat`** (pode aparecer apenas como `Iniciar`).
+    * *Nota:* Se o Windows exibir um aviso de proteção, clique em **Mais informações** > **Executar assim mesmo**.
+3.  **Primeiro Uso**:
+    * Uma janela preta (terminal) se abrirá. **Não a feche.**
+    * Na primeira vez, o sistema levará alguns minutos para configurar o ambiente. Nas próximas, será instantâneo.
+    * O navegador abrirá automaticamente com o software pronto.
+
+### Para usuários Mac e Linux (via terminal)
+Como o script automático (`.bat`) é exclusivo para Windows, siga estes passos:
+
+1.  **Pré-requisitos**:
+    * Tenha o **Python 3.10+** instalado.
+    * Instale a ferramenta **ExifTool**:
+        * **Mac (via Homebrew):** `brew install exiftool`
+        * **Linux (Ubuntu/Debian):** `sudo apt-get install libimage-exiftool-perl`
+2.  **Execução**:
+    * Abra o terminal na pasta descompactada do projeto.
+    * Instale as bibliotecas (apenas na 1ª vez):
+        ```bash
+        pip install -r requirements.txt
+        ```
+    * Inicie o software:
+        ```bash
+        streamlit run app_completo.py
+        ```
+
 ---
 
-## 1. Preparação dos arquivos (importante)
+## 2. Preparação dos arquivos (importante)
 
 Para o sistema agrupar automaticamente a foto visual com a foto térmica e ler metadados (tratamento, período, etc.), os arquivos devem seguir estritamente o padrão de nomenclatura abaixo, separados por underline (_).
 
@@ -26,7 +64,7 @@ Exemplos válidos:
 
 ---
 
-## 2. Passo a passo de uso
+## 3. Passo a passo de uso
 
 ### Passo 1 — Upload
 1. Abra a aplicação no navegador.  
@@ -50,7 +88,7 @@ Abra a aba **Dashboard completo** para visualizar:
 
 ---
 
-## 3. Exportando resultados
+## 4. Exportando resultados
 
 Na seção **Relatório e exportação** do dashboard:
 
