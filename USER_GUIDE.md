@@ -2,7 +2,7 @@
 
 Ferramenta para extrair temperatura foliar de imagens FLIR, utilizando processamento radiométrico e geração de relatórios estatísticos.
 
----
+
 
 ## 1. Instalação e inicialização
 
@@ -26,6 +26,10 @@ O software foi preparado para rodar localmente no seu computador, garantindo per
 4.  **Uso**:
     * Uma janela preta (terminal) abrirá. **Não a feche**, ela é o motor do sistema.
     * O navegador abrirá automaticamente com a ferramenta pronta para uso.
+    * **Se o navegador não abrir sozinho:**
+        * Olhe para a janela preta e procure a linha que diz: `http://localhost:8501`
+        * Segure a tecla **Ctrl** e clique neste link;
+        * Ou copie o endereço `http://localhost:8501` e cole no seu navegador (Chrome, Edge, Firefox...).
   
 
 ### Para usuários Mac e Linux (avançado)
@@ -42,7 +46,7 @@ O pacote automático (`.bat`) é exclusivo para Windows. Em outros sistemas, sig
     * Instale as dependências: `pip install -r requirements.txt`
     * Rode o comando: `streamlit run app_completo.py`
 
----
+
 
 ## 2. Preparação dos arquivos (importante)
 
@@ -64,7 +68,7 @@ Exemplos válidos:
 - `P05_27_Controle_Dia_R1_visual.jpg`  
 - `P05_27_Controle_Dia_R1_thermal.jpg`
 
----
+
 
 ## 3. Passo a passo de uso
 
@@ -88,7 +92,7 @@ Abra a aba **Dashboard completo** para visualizar:
 
 - Boxplot: Distribuição estatística para detecção de outliers.
 
----
+
 
 ## 4. Exportando resultados
 
@@ -101,7 +105,7 @@ Na seção **Relatório e exportação** do dashboard:
   - um mapa de calor gerado matematicamente a partir dos sensores. 
   - tabela de estatísticas.
 
----
+
 
 ## 5. Observações e dicas
 - Use nomes consistentes para evitar falhas no pareamento automático.  
