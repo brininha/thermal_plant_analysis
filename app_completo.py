@@ -383,16 +383,31 @@ with tab_dash:
             idx_escolhido = opcoes[escolha]
             matriz = st.session_state['dados'][idx_escolhido]['raw_matrix']
             
-            # Gráfico interativo que permite passar o mouse para ver temperatura
+            # 1. Criamos uma regra: se for NaN, avisa que é fundo. Se for número, formata a temperatura.
+            def formatar_pixel(val):
+                if np.isnan(val):
+                    return "Fundo (sem leitura)"
+                return f"Temp: {val:.2f} °C"
+            
+            # 2. Aplicamos essa regra matematicamente em todos os pixels da matriz de uma vez
+            matriz_hover = np.vectorize(formatar_pixel)(matriz)
+            
+            # 3. Geramos o gráfico
             fig_pixel = px.imshow(
                 matriz,
                 color_continuous_scale='Inferno',
                 labels=dict(x="Eixo X", y="Eixo Y", color="Temp (°C)"),
                 title=f"Termografia: {escolha}"
             )
+            
             fig_pixel.update_xaxes(showticklabels=False)
             fig_pixel.update_yaxes(showticklabels=False)
-            fig_pixel.update_traces(hovertemplate="Temp: %{z:.2f} °C<extra></extra>")
+            
+            # 4. Injetamos a nossa matriz de textos (customdata) no lugar da formatação padrão
+            fig_pixel.update_traces(
+                customdata=matriz_hover,
+                hovertemplate="%{customdata}<extra></extra>"
+            )
             
             st.plotly_chart(fig_pixel, width='stretch')
 
