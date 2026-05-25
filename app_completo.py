@@ -5,7 +5,6 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ExifTags
-from streamlit_cropper import st_cropper
 from fpdf import FPDF
 import tempfile
 import os
@@ -70,16 +69,75 @@ def organizar_pares(uploaded_files):
     
     return [p for p in pares.values() if p['thermal'] is not None]
 
+# --- LÓGICA DE VISÃO COMPUTACIONAL (AUTOMATIZAÇÃO) ---
+
+def gerar_mascara_automatica(img_visual_arr, periodo, w_termica, h_termica, dx=-5, dy=20):
+    """
+    Aplica o pipeline de segmentação condicional (Dia/Noite) e corrige paralaxe.
+    """
+    if periodo.lower() == 'noite':
+        # Pipeline Noturno: HSV + Maior Contorno (Filtro de Sombras)
+        hsv = cv2.cvtColor(img_visual_arr, cv2.COLOR_RGB2HSV)
+        lower_green = np.array([30, 80, 40]) # Saturação mínima 80 para ignorar sombras
+        upper_green = np.array([90, 255, 255])
+        mask_hsv = cv2.inRange(hsv, lower_green, upper_green)
+
+        kernel_conexao = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+        mask_conectada = cv2.morphologyEx(mask_hsv, cv2.MORPH_CLOSE, kernel_conexao)
+        contornos, _ = cv2.findContours(mask_conectada, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        mask_planta = np.zeros_like(mask_hsv)
+
+        if contornos:
+            maior_planta = max(contornos, key=cv2.contourArea)
+            cv2.drawContours(mask_planta, [maior_planta], -1, 255, thickness=cv2.FILLED)
+            mask_planta = cv2.bitwise_and(mask_hsv, mask_planta)
+        else:
+            mask_planta = mask_hsv.copy()
+    else:
+        # Pipeline Diurno: Guilhotina Morfológica
+        img_gray = cv2.cvtColor(img_visual_arr, cv2.COLOR_RGB2GRAY)
+        img_blur = cv2.GaussianBlur(img_gray, (5, 5), 0)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(32, 32))
+        img_equalized = clahe.apply(img_blur)
+        
+        _, mask_escuros = cv2.threshold(img_equalized, 75, 255, cv2.THRESH_BINARY_INV)
+        
+        kernel_grosso = cv2.getStructuringElement(cv2.MORPH_RECT, (30, 30))
+        mask_vaso_ref = cv2.morphologyEx(mask_escuros, cv2.MORPH_OPEN, kernel_grosso)
+        
+        contornos_vaso, _ = cv2.findContours(mask_vaso_ref, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        mask_planta = mask_escuros.copy()
+
+        if contornos_vaso:
+            contornos_solidos = [c for c in contornos_vaso if cv2.contourArea(c) > 500]
+            if contornos_solidos:
+                contornos_ordenados = sorted(contornos_solidos, key=lambda c: cv2.boundingRect(c)[1])
+                x, y, w, h = cv2.boundingRect(contornos_ordenados[0])
+                linha_de_corte = max(y - 5, 0)
+                mask_planta[linha_de_corte:, :] = 0
+
+        kernel_limpeza = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        mask_planta = cv2.morphologyEx(mask_planta, cv2.MORPH_OPEN, kernel_limpeza)
+        mask_planta = cv2.morphologyEx(mask_planta, cv2.MORPH_DILATE, kernel_limpeza)
+
+    # Sincronização e Paralaxe
+    mask_res = cv2.resize(mask_planta, (w_termica, h_termica), interpolation=cv2.INTER_NEAREST)
+    _, mask_res = cv2.threshold(mask_res, 127, 255, cv2.THRESH_BINARY)
+    
+    matriz_translacao = np.float32([[1, 0, dx], [0, 1, dy]])
+    mask_alinhada = cv2.warpAffine(mask_res, matriz_translacao, (w_termica, h_termica))
+
+    return mask_alinhada
+
 # --- LÓGICA RADIOMÉTRICA ---
 
-def processar_termica_radiometrica(img_crop_pil, img_full_pil, arquivo_original):
+def processar_termica_radiometrica(img_vis_pil, img_therm_pil, arquivo_original_therm, periodo):
     """
-    Retorna: Estatísticas, Imagem Visual do Crop, e a MATRIZ TÉRMICA CRUA (numpy).
+    Retorna: Estatísticas, Imagem Mascarada e Matriz Crua.
     """
-    # 1. Extração dos dados brutos
     with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp:
-        arquivo_original.seek(0)
-        tmp.write(arquivo_original.read())
+        arquivo_original_therm.seek(0)
+        tmp.write(arquivo_original_therm.read())
         tmp_path = tmp.name
 
     try:
@@ -88,32 +146,33 @@ def processar_termica_radiometrica(img_crop_pil, img_full_pil, arquivo_original)
         matriz_termica = flir.get_thermal_np()
     except Exception as e:
         st.error(f"Erro ao ler dados radiométricos: {e}")
-        return None, img_crop_pil, None
+        return None, None, None
     finally:
         if os.path.exists(tmp_path): os.remove(tmp_path)
 
-    # 2. Sincronização de tamanho (Raw vs Visual)
-    img_full_arr = np.array(img_full_pil)
-    img_crop_arr = np.array(img_crop_pil)
-    h_vis, w_vis = img_full_arr.shape[:2]
+    img_vis_arr = np.array(img_vis_pil)
+    img_therm_arr = np.array(img_therm_pil)
     
-    # Redimensiona a matriz térmica para bater com a resolução visual
+    # Capturamos as dimensões da imagem visual (base de alta resolução)
+    h_vis, w_vis = img_vis_arr.shape[:2]
+    
+    # Sincroniza a imagem de cores térmica com o tamanho da visual
+    if img_therm_arr.shape[:2] != (h_vis, w_vis):
+        img_therm_arr = cv2.resize(img_therm_arr, (w_vis, h_vis), interpolation=cv2.INTER_CUBIC)
+    
+    # Redimensiona matriz bruta para bater com visual
     matriz_termica = cv2.resize(matriz_termica, (w_vis, h_vis), interpolation=cv2.INTER_CUBIC)
 
-    # 3. Localizar o Crop na imagem original
-    full_gray = cv2.cvtColor(img_full_arr, cv2.COLOR_RGB2GRAY) if len(img_full_arr.shape)==3 else img_full_arr
-    crop_gray = cv2.cvtColor(img_crop_arr, cv2.COLOR_RGB2GRAY) if len(img_crop_arr.shape)==3 else img_crop_arr
+    # Automação da Máscara
+    mask_planta = gerar_mascara_automatica(img_vis_arr, periodo, w_vis, h_vis)
 
-    res = cv2.matchTemplate(full_gray, crop_gray, cv2.TM_CCOEFF_NORMED)
-    _, _, _, max_loc = cv2.minMaxLoc(res)
-    x, y = max_loc
-    h_crop, w_crop = crop_gray.shape[:2]
+    # Garante que a máscara é estritamente 8-bits para o OpenCV
+    mask_planta = mask_planta.astype(np.uint8)
 
-    # 4. Recorte da matriz térmica
-    termica_recortada = matriz_termica[y:y+h_crop, x:x+w_crop]
+    pixels_validos = matriz_termica[mask_planta == 255]
 
-    # Como removemos a segmentação automática, todos os pixels do retângulo contam
-    pixels_validos = termica_recortada.flatten()
+    if len(pixels_validos) == 0:
+        return None, None, None
 
     stats = {
         'Temp_Media': np.mean(pixels_validos),
@@ -122,7 +181,13 @@ def processar_termica_radiometrica(img_crop_pil, img_full_pil, arquivo_original)
         'Desvio': np.std(pixels_validos)
     }
     
-    return stats, Image.fromarray(img_crop_arr), termica_recortada
+    img_recortada_arr = cv2.bitwise_and(img_therm_arr, img_therm_arr, mask=mask_planta)
+    img_recortada_pil = Image.fromarray(img_recortada_arr)
+    
+    matriz_termica_dash = matriz_termica.copy()
+    matriz_termica_dash[mask_planta == 0] = np.nan 
+    
+    return stats, img_recortada_pil, matriz_termica_dash
 
 # --- GERAÇÃO DE PDF ---
 
@@ -206,7 +271,7 @@ def gerar_pdf_final(lista_dados):
 
 # --- INTERFACE ---
 
-if 'idx' not in st.session_state: st.session_state['idx'] = 0
+# if 'idx' not in st.session_state: st.session_state['idx'] = 0
 if 'dados' not in st.session_state: st.session_state['dados'] = []
 
 st.title("🌱 Análise térmica de plantas")
@@ -221,29 +286,64 @@ with st.sidebar:
         st.rerun()
 
 pares = organizar_pares(files) if files else []
-tab_edit, tab_dash = st.tabs(["Editor de recorte", "Dashboard"])
+tab_edit, tab_dash = st.tabs(["Processamento de amostras", "Dashboard"])
 
-# Aba 1: Editor
+# Aba 1: Processamento
 with tab_edit:
     if pares:
-        if st.session_state['idx'] < len(pares):
-            par = pares[st.session_state['idx']]
-            meta = par['meta']
-            st.subheader(f"Processando: {meta['Planta']} - {meta['Tratamento']}")
-            c1, c2 = st.columns(2)
-            
-            img_vis_full = carregar_imagem(par['visual']) if par['visual'] else None
-            img_therm_full = carregar_imagem(par['thermal'])
-            
-            with c1:
-                if img_vis_full: st.image(img_vis_full, use_column_width=True, caption="Visual")
-            with c2:
-                st.caption("⚠️ Recorte apenas a área da planta. Todos os pixels do retângulo serão calculados.")
-                img_crop = st_cropper(img_therm_full, realtime_update=True, box_color='#FF0000', aspect_ratio=None, key=f"c_{par['id']}")
+        if len(st.session_state['dados']) == len(pares):
+             st.success(f"Todas as {len(pares)} amostras foram processadas! Verifique os resultados no Dashboard.")
+             if st.button("Reprocessar todas as imagens"):
+                 st.session_state['dados'] = []
+                 st.rerun()
+        else:
+            st.subheader(f"Amostras detectadas: {len(pares)}")
+            st.info("Confira os pares abaixo. O sistema usará a segmentação automática baseada nos metadados para extrair as temperaturas.")
+
+            # Criamos uma área de scroll ou lista para os pares
+            for i, par in enumerate(pares):
+                meta = par['meta']
                 
-                if st.button("Confirmar", type="primary", width='content'):
-                    with st.spinner("Extraindo temperaturas reais..."):
-                        stats, img_proc, raw_matrix = processar_termica_radiometrica(img_crop, img_therm_full, par['thermal'])
+                # Container para agrupar o par e a legenda
+                with st.container(border=True):
+                    st.markdown(f"**ID: {meta['Planta']}** | Tratamento: {meta['Tratamento']} | Período: {meta['Periodo']}")
+                    
+                    col_v, col_t = st.columns(2)
+                    
+                    # Carregamento das duas imagens do par
+                    img_vis_preview = carregar_imagem(par['visual']) if par['visual'] else None
+                    img_therm_preview = carregar_imagem(par['thermal'])
+                    
+                    with col_v:
+                        if img_vis_preview:
+                            st.image(img_vis_preview, caption="Referência visual", use_container_width=True)
+                        else:
+                            st.warning("Imagem visual não encontrada para este par.")
+                            
+                    with col_t:
+                        st.image(img_therm_preview, caption="Imagem térmica", use_container_width=True)
+
+            st.divider()
+            
+            # Botão de processamento em lote
+            if st.button("Processar tudo", type="primary", use_container_width=True):
+                barra_progresso = st.progress(0)
+                status_texto = st.empty()
+                
+                st.session_state['dados'] = [] 
+                
+                for i, par in enumerate(pares):
+                    meta = par['meta']
+                    status_texto.text(f"Processando radiometria: {meta['Planta']} ({i+1}/{len(pares)})...")
+                    
+                    img_vis_full = carregar_imagem(par['visual']) if par['visual'] else None
+                    img_therm_full = carregar_imagem(par['thermal'])
+                    
+                    # Chama a sua lógica de extração de dados brutos (matriz de sensores)
+                    # conforme definido no seu pipeline radiométrico
+                    stats, img_proc, raw_matrix = processar_termica_radiometrica(
+                        img_vis_full, img_therm_full, par['thermal'], meta['Periodo']
+                    )
                     
                     if stats:
                         st.session_state['dados'].append({
@@ -253,13 +353,14 @@ with tab_edit:
                             'img_termica_crop': img_proc,
                             'raw_matrix': raw_matrix 
                         })
-                        st.toast(f"Salvo! Média: {stats['Temp_Media']:.1f}°C")
-                        st.session_state['idx'] += 1
-                        st.rerun()
-        else:
-            st.success("Todas as imagens foram processadas!")
+                    
+                    barra_progresso.progress((i + 1) / len(pares))
+                
+                status_texto.text("Processamento concluído!")
+                st.balloons()
+                st.rerun()
     else:
-        st.info("Faça o upload das imagens na barra lateral.")
+        st.info("Aguardando upload de imagens na barra lateral.")
 
 # Aba 2: Dashboard
 with tab_dash:
@@ -373,4 +474,4 @@ with tab_dash:
                     pdf_b = gerar_pdf_final(st.session_state['dados'])
                     st.download_button("Baixar PDF", pdf_b, "relatorio_tecnico.pdf", "application/pdf", width='stretch')
     else:
-        st.info("Processe as imagens primeiro na aba 'Editor de recorte'.")
+        st.info("Processe as imagens primeiro na aba 'Processamento de amostras'.")
