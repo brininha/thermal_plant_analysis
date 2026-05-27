@@ -1,3 +1,4 @@
+# todos os imports de bibliotecas necessárias
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -9,17 +10,16 @@ from fpdf import FPDF
 import tempfile
 import os
 
-# --- IMPORTAÇÃO DA BIBLIOTECA RADIOMÉTRICA ---
+# biblioteca radiométrica para extrair a temperatura dos metadados
 try:
     from flirimageextractor import FlirImageExtractor
 except ImportError:
     st.error("Biblioteca 'flirimageextractor' não encontrada. Instale com: pip install flirimageextractor")
 
-# Configuração da página
+# configuração da página
 st.set_page_config(page_title="Análise térmica de plantas", layout="wide", page_icon="🌱")
 
-# --- FUNÇÕES UTILITÁRIAS ---
-
+# funções utilitárias
 def carregar_imagem(uploaded_file):
     """Carrega a imagem visualmente, respeitando a rotação EXIF."""
     uploaded_file.seek(0)
@@ -58,7 +58,7 @@ def organizar_pares(uploaded_files):
         
         if pares[id_comum]['meta'] is None:
             partes = id_comum.split('_')
-            # Ex: P01_27_Controle_Dia_R1_thermal.jpg
+            # ex de nome de arquivo: P01_27_Controle_Dia_R1_thermal.jpg
             if len(partes) >= 5:
                 pares[id_comum]['meta'] = {
                     'Planta': partes[0], 'Ambiente': partes[1], 'Tratamento': partes[2],
@@ -69,16 +69,15 @@ def organizar_pares(uploaded_files):
     
     return [p for p in pares.values() if p['thermal'] is not None]
 
-# --- LÓGICA DE VISÃO COMPUTACIONAL (AUTOMATIZAÇÃO) ---
-
+# segmentação automática
 def gerar_mascara_automatica(img_visual_arr, periodo, w_termica, h_termica, dx=-5, dy=20):
     """
-    Aplica o pipeline de segmentação condicional (Dia/Noite) e corrige paralaxe.
+    aplica o pipeline de segmentação condicional (dia/noite) e corrige paralaxe.
     """
     if periodo.lower() == 'noite':
-        # Pipeline Noturno: HSV + Maior Contorno (Filtro de Sombras)
+        # pipeline noturno: HSV + maior contorno
         hsv = cv2.cvtColor(img_visual_arr, cv2.COLOR_RGB2HSV)
-        lower_green = np.array([30, 80, 40]) # Saturação mínima 80 para ignorar sombras
+        lower_green = np.array([30, 80, 40]) # saturação mínima 80 para ignorar sombras
         upper_green = np.array([90, 255, 255])
         mask_hsv = cv2.inRange(hsv, lower_green, upper_green)
 
@@ -94,7 +93,7 @@ def gerar_mascara_automatica(img_visual_arr, periodo, w_termica, h_termica, dx=-
         else:
             mask_planta = mask_hsv.copy()
     else:
-        # Pipeline Diurno: Guilhotina Morfológica
+        # pipeline diurno: guilhotina morfológica
         img_gray = cv2.cvtColor(img_visual_arr, cv2.COLOR_RGB2GRAY)
         img_blur = cv2.GaussianBlur(img_gray, (5, 5), 0)
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(32, 32))
@@ -120,7 +119,7 @@ def gerar_mascara_automatica(img_visual_arr, periodo, w_termica, h_termica, dx=-
         mask_planta = cv2.morphologyEx(mask_planta, cv2.MORPH_OPEN, kernel_limpeza)
         mask_planta = cv2.morphologyEx(mask_planta, cv2.MORPH_DILATE, kernel_limpeza)
 
-    # Sincronização e Paralaxe
+    # sincronização e paralaxe
     mask_res = cv2.resize(mask_planta, (w_termica, h_termica), interpolation=cv2.INTER_NEAREST)
     _, mask_res = cv2.threshold(mask_res, 127, 255, cv2.THRESH_BINARY)
     
@@ -129,11 +128,10 @@ def gerar_mascara_automatica(img_visual_arr, periodo, w_termica, h_termica, dx=-
 
     return mask_alinhada
 
-# --- LÓGICA RADIOMÉTRICA ---
-
+# lógica radiométrica
 def processar_termica_radiometrica(img_vis_pil, img_therm_pil, arquivo_original_therm, periodo):
     """
-    Retorna: Estatísticas, Imagem Mascarada e Matriz Crua.
+    Retorna: estatísticas, imagem mascarada e matriz crua.
     """
     with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp:
         arquivo_original_therm.seek(0)
@@ -153,20 +151,20 @@ def processar_termica_radiometrica(img_vis_pil, img_therm_pil, arquivo_original_
     img_vis_arr = np.array(img_vis_pil)
     img_therm_arr = np.array(img_therm_pil)
     
-    # Capturamos as dimensões da imagem visual (base de alta resolução)
+    # capturamos as dimensões da imagem visual (base de alta resolução)
     h_vis, w_vis = img_vis_arr.shape[:2]
     
-    # Sincroniza a imagem de cores térmica com o tamanho da visual
+    # sincroniza a imagem de cores térmica com o tamanho da visual
     if img_therm_arr.shape[:2] != (h_vis, w_vis):
         img_therm_arr = cv2.resize(img_therm_arr, (w_vis, h_vis), interpolation=cv2.INTER_CUBIC)
     
-    # Redimensiona matriz bruta para bater com visual
+    # redimensiona matriz bruta para bater com visual
     matriz_termica = cv2.resize(matriz_termica, (w_vis, h_vis), interpolation=cv2.INTER_CUBIC)
 
-    # Automação da Máscara
+    # automação da máscara
     mask_planta = gerar_mascara_automatica(img_vis_arr, periodo, w_vis, h_vis)
 
-    # Garante que a máscara é estritamente 8-bits para o OpenCV
+    # garante que a máscara é estritamente 8-bits para o opencv
     mask_planta = mask_planta.astype(np.uint8)
 
     pixels_validos = matriz_termica[mask_planta == 255]
@@ -189,7 +187,7 @@ def processar_termica_radiometrica(img_vis_pil, img_therm_pil, arquivo_original_
     
     return stats, img_recortada_pil, matriz_termica_dash
 
-# --- GERAÇÃO DE PDF ---
+# geração de pdf
 
 class PDFRelatorio(FPDF):
     def header(self):
@@ -228,20 +226,20 @@ def gerar_pdf_final(lista_dados):
             
             y_img = pdf.get_y() + 10 
             
-            # 1. Imagem Visual
+            # imagem visual
             if item['img_visual']:
                 path_v = os.path.join(tmpdir, f"v_{meta['Planta']}.jpg")
                 item['img_visual'].save(path_v)
                 pdf.image(path_v, x=10, y=y_img, w=60, h=50)
                 pdf.text(10, y_img - 3, "Imagem visual")
             
-            # 2. Imagem Térmica (Crop Visual)
+            # imagem térmica
             path_t = os.path.join(tmpdir, f"t_{meta['Planta']}.jpg")
             item['img_termica_crop'].save(path_t)
             pdf.image(path_t, x=75, y=y_img, w=60, h=50)
             pdf.text(75, y_img - 3, "Recorte analisado")
 
-            # 3. Mapa de Calor Radiométrico
+            # mapa de calor radiométrico
             if item['raw_matrix'] is not None:
                 path_h = os.path.join(tmpdir, f"h_{meta['Planta']}.png")
                 gerar_grafico_matplotlib(item['raw_matrix'], path_h)
@@ -269,8 +267,7 @@ def gerar_pdf_final(lista_dados):
 
     return pdf.output(dest='S').encode('latin-1')
 
-# --- INTERFACE ---
-
+# interface
 # if 'idx' not in st.session_state: st.session_state['idx'] = 0
 if 'dados' not in st.session_state: st.session_state['dados'] = []
 
@@ -288,7 +285,7 @@ with st.sidebar:
 pares = organizar_pares(files) if files else []
 tab_edit, tab_dash = st.tabs(["Processamento de amostras", "Dashboard"])
 
-# Aba 1: Processamento
+# aba de processamento
 with tab_edit:
     if pares:
         if len(st.session_state['dados']) == len(pares):
@@ -300,17 +297,17 @@ with tab_edit:
             st.subheader(f"Amostras detectadas: {len(pares)}")
             st.info("Confira os pares abaixo. O sistema usará a segmentação automática baseada nos metadados para extrair as temperaturas.")
 
-            # Criamos uma área de scroll ou lista para os pares
+            # criamos uma área de scroll ou lista para os pares
             for i, par in enumerate(pares):
                 meta = par['meta']
                 
-                # Container para agrupar o par e a legenda
+                # container para agrupar o par e a legenda
                 with st.container(border=True):
                     st.markdown(f"**ID: {meta['Planta']}** | Tratamento: {meta['Tratamento']} | Período: {meta['Periodo']}")
                     
                     col_v, col_t = st.columns(2)
                     
-                    # Carregamento das duas imagens do par
+                    # carregamento das duas imagens do par
                     img_vis_preview = carregar_imagem(par['visual']) if par['visual'] else None
                     img_therm_preview = carregar_imagem(par['thermal'])
                     
@@ -325,7 +322,7 @@ with tab_edit:
 
             st.divider()
             
-            # Botão de processamento em lote
+            # botão de processamento em lote
             if st.button("Processar tudo", type="primary", use_container_width=True):
                 barra_progresso = st.progress(0)
                 status_texto = st.empty()
@@ -339,7 +336,7 @@ with tab_edit:
                     img_vis_full = carregar_imagem(par['visual']) if par['visual'] else None
                     img_therm_full = carregar_imagem(par['thermal'])
                     
-                    # Chama a sua lógica de extração de dados brutos (matriz de sensores)
+                    # chama a sua lógica de extração de dados brutos (matriz de sensores)
                     # conforme definido no seu pipeline radiométrico
                     stats, img_proc, raw_matrix = processar_termica_radiometrica(
                         img_vis_full, img_therm_full, par['thermal'], meta['Periodo']
@@ -362,7 +359,7 @@ with tab_edit:
     else:
         st.info("Aguardando upload de imagens na barra lateral.")
 
-# Aba 2: Dashboard
+# aba do dashboard
 with tab_dash:
     if st.session_state['dados']:
         flat_data = []
@@ -372,7 +369,7 @@ with tab_dash:
             flat_data.append(row)
         df = pd.DataFrame(flat_data)
         
-        # --- SEÇÃO 1: INSPECTOR INTERATIVO (NOVIDADE) ---
+        # seção 1: inspetor interativo de pixels
         st.markdown("### Inspeção de pixels")
         st.info("Selecione uma amostra para visualizar o mapa térmico radiométrico completo da área recortada. Passe o mouse sobre os pixels para ver a temperatura exata.")
         
@@ -383,16 +380,17 @@ with tab_dash:
             idx_escolhido = opcoes[escolha]
             matriz = st.session_state['dados'][idx_escolhido]['raw_matrix']
             
-            # 1. Criamos uma regra: se for NaN, avisa que é fundo. Se for número, formata a temperatura.
+            # se for NaN, avisa que é fundo
+            # se for número, formata a temperatura.
             def formatar_pixel(val):
                 if np.isnan(val):
                     return "Fundo (sem leitura)"
                 return f"Temp: {val:.2f} °C"
             
-            # 2. Aplicamos essa regra matematicamente em todos os pixels da matriz de uma vez
+            # aplicamos essa regra matematicamente em todos os pixels da matriz de uma vez
             matriz_hover = np.vectorize(formatar_pixel)(matriz)
             
-            # 3. Geramos o gráfico
+            # geramos o gráfico
             fig_pixel = px.imshow(
                 matriz,
                 color_continuous_scale='Inferno',
@@ -403,7 +401,7 @@ with tab_dash:
             fig_pixel.update_xaxes(showticklabels=False)
             fig_pixel.update_yaxes(showticklabels=False)
             
-            # 4. Injetamos a nossa matriz de textos (customdata) no lugar da formatação padrão
+            # injetamos a nossa matriz de textos (customdata) no lugar da formatação padrão
             fig_pixel.update_traces(
                 customdata=matriz_hover,
                 hovertemplate="%{customdata}<extra></extra>"
@@ -413,7 +411,7 @@ with tab_dash:
 
         st.divider()
 
-        # --- SEÇÃO 2: GRÁFICOS ESTATÍSTICOS (RESTAURADOS) ---
+        # seção 2: gráficos
         st.subheader("Análise estatística")
         
         cf1, cf2 = st.columns(2)
@@ -424,7 +422,7 @@ with tab_dash:
 
         if not df_chart.empty:
             
-            # Gráfico 1: Barras
+            # gráfico 1: barras
             st.markdown("### Comparação de médias")
             df_bar = df_chart.groupby(['Tratamento', 'Periodo'])['Temp_Media'].mean().reset_index()
             fig_bar = px.bar(
@@ -434,14 +432,14 @@ with tab_dash:
                 color="Periodo", 
                 barmode='group', 
                 text_auto='.1f',
-                color_discrete_sequence=px.colors.qualitative.Pastel # Cor restaurada
+                color_discrete_sequence=px.colors.qualitative.Pastel # cor restaurada
             )
             fig_bar.update_layout(yaxis_title="Temp média (°C)")
             st.plotly_chart(fig_bar, width='stretch')
 
             st.divider()
             
-            # Gráfico 2 e 3: Heatmap e Boxplot
+            # gráfico 2 e 3: heatmap e boxplot
             col_heat, col_box = st.columns(2)
 
             with col_heat:
@@ -452,7 +450,7 @@ with tab_dash:
                         heatmap_data, 
                         text_auto='.1f', 
                         aspect="auto",
-                        color_continuous_scale='RdBu_r', # Escala restaurada
+                        color_continuous_scale='RdBu_r', # escala restaurada
                         origin='lower'
                     )
                     st.plotly_chart(fig_heat, width='stretch')
@@ -467,7 +465,7 @@ with tab_dash:
                     y="Temp_Media", 
                     color="Periodo", 
                     points="all",
-                    color_discrete_sequence=px.colors.qualitative.Pastel # Cor restaurada
+                    color_discrete_sequence=px.colors.qualitative.Pastel # cor restaurada
                 )
                 fig_box.update_layout(yaxis_title="Temp (°C)")
                 st.plotly_chart(fig_box, width='stretch')
@@ -477,12 +475,14 @@ with tab_dash:
             
         st.divider()
 
-        # --- SEÇÃO 3: DOWNLOAD ---
+        # seção 3: download
         st.subheader("Relatório e exportação")
         cd1, cd2 = st.columns(2)
+        # baixar csv dos dados obtidos
         with cd1:
             csv = df.to_csv(index=False).encode('utf-8')
             st.download_button("Baixar tabela (CSV)", csv, "dados_radiometricos.csv", "text/csv", width='stretch')
+        # baixar pdf dos dados obtidos
         with cd2:
             if st.button("Gerar relatório PDF completo", width='stretch'):
                 with st.spinner("Gerando PDF..."):
