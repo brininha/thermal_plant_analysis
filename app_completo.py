@@ -330,7 +330,14 @@ with tab_edit:
                          stroke_color = "#00FF00" if modo_desenho == "Desenhar (Adicionar)" else "#FF0000"
                      
                      with col2:
-                         bg_image = Image.fromarray(img_vis_arr)
+                         # cria uma copia da imagem visual para o overlay
+                         overlay = img_vis_arr.copy()
+                         
+                         overlay[mask_atual == 255] = [0, 255, 0]
+                         
+                         img_fundo_destaque = cv2.addWeighted(img_vis_arr, 0.7, overlay, 0.3, 0)
+                         bg_image = Image.fromarray(img_fundo_destaque)
+                         
                          canvas_result = st_canvas(
                              fill_color="rgba(255, 165, 0, 0.3)",
                              stroke_width=tamanho_pincel,
