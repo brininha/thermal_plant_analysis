@@ -225,37 +225,37 @@ def gerar_pdf_final(lista_dados):
     pdf.set_auto_page_break(auto=True, margin=15)
     
     with tempfile.TemporaryDirectory() as tmpdir:
-        for item in lista_dados:
+        for i, item in enumerate(lista_dados):
             pdf.add_page()
             meta = item['meta']
             stats = item['stats']
             
             pdf.set_font('Arial', 'B', 12)
             pdf.set_fill_color(240, 240, 240)
-            pdf.cell(0, 10, f"ID: {meta['Planta']} | Trat: {meta['Tratamento']} | Amb: {meta['Ambiente']}", 1, 1, 'L', fill=True)
+            pdf.cell(0, 10, f"ID: {meta['Planta']} | Trat: {meta['Tratamento']} | Amb: {meta['Ambiente']} | Período: {meta['Periodo']} | R{meta['Replica']}", 1, 1, 'L', fill=True)
             
             y_img = pdf.get_y() + 10 
             
             # imagem visual
             if item['img_visual']:
-                path_v = os.path.join(tmpdir, f"v_{meta['Planta']}.jpg")
+                path_v = os.path.join(tmpdir, f"v_{i}.jpg")
                 item['img_visual'].save(path_v)
                 pdf.image(path_v, x=10, y=y_img, w=60, h=50)
                 pdf.text(10, y_img - 3, "Imagem visual")
             
             # imagem térmica
-            path_t = os.path.join(tmpdir, f"t_{meta['Planta']}.jpg")
+            path_t = os.path.join(tmpdir, f"t_{i}.jpg")
             item['img_termica_crop'].save(path_t)
             pdf.image(path_t, x=75, y=y_img, w=60, h=50)
             pdf.text(75, y_img - 3, "Recorte analisado")
 
             # mapa de calor radiométrico
             if item['raw_matrix'] is not None:
-                path_h = os.path.join(tmpdir, f"h_{meta['Planta']}.png")
+                path_h = os.path.join(tmpdir, f"h_{i}.png")
                 gerar_grafico_matplotlib(item['raw_matrix'], path_h)
                 pdf.image(path_h, x=140, y=y_img, w=60, h=50)
                 pdf.text(140, y_img - 3, "Dados reais")
-            
+                        
             pdf.set_y(y_img + 60)
             pdf.set_font('Arial', 'B', 10)
             pdf.cell(0, 8, "Estatísticas da área selecionada", 0, 1, 'L')
