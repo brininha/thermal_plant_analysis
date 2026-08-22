@@ -393,7 +393,7 @@ with tab_dash:
             # geramos o gráfico
             fig_pixel = px.imshow(
                 matriz,
-                color_continuous_scale='Inferno',
+                color_continuous_scale='icefire',
                 labels=dict(x="Eixo X", y="Eixo Y", color="Temp (°C)"),
                 title=f"Termografia: {escolha}"
             )
