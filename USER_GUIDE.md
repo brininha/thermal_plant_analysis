@@ -54,19 +54,21 @@ Para o sistema agrupar automaticamente a foto visual com a foto térmica e ler m
 
 **Padrão de nomenclatura**
 ```
-ID_TempAmbiente_Tratamento_Periodo_Replica_Tipo.jpg
+ID_TempAmbiente_Tratamento_Periodo_Replica_Variedade_Tipo.jpg
 ```
 
 - ID: identificador único da planta (ex.: `P01`, `Planta10`).  
 - TempAmbiente: temperatura da estufa/câmara no momento da foto (ex.: `21`, `27`, `35`, `45`). essencial para calibração automática.  
 - Tratamento: grupo experimental (ex.: `controle`, `heatstress`, `recovery`).  
 - Periodo: momento da coleta (ex.: `Dia`, `Noite`, `Manha`).  
-- Replica: número da réplica (ex.: `R1`, `R2`).  
+- Replica: número da réplica (ex.: `R1`, `R2`). 
+- Variedade (opcional): tipo do cultivar (ex.: `Nipponbare`). Se não houver, o sistema entende automaticamente. 
 - Tipo: deve terminar com `thermal` ou `visual`.
 
 Exemplos válidos:
-- `P05_27_Controle_Dia_R1_visual.jpg`  
-- `P05_27_Controle_Dia_R1_thermal.jpg`
+- `P05_27_Controle_Dia_R1_Nipponbare_visual.jpg`
+- `P05_27_Controle_Dia_R1_Nipponbare_thermal.jpg`
+- `P05_27_Controle_Noite_R1_thermal.jpg` (sem a variedade, o que também é válido)
 
 
 
@@ -74,13 +76,22 @@ Exemplos válidos:
 
 ### Passo 1 — Upload
 1. Abra a aplicação no navegador.  
-2. Na barra lateral, faça upload dos arquivos (aceita múltiplos).  
-Dica: arraste dezenas de arquivos; o sistema agrupa pares automaticamente.
+2. Na barra lateral, faça upload dos arquivos (aceita múltiplos). Você pode arrastar dezenas de arquivos de uma vez.
+3. O sistema fará o pareamento automático e exibirá uma pré-visualização das imagens na tela principal.
+4. Clique no botão azul "Processar tudo". O sistema irá isolar a planta do fundo automaticamente e extrair a temperatura foliar.
 
-### Passo 2 — Editor de recorte
-- Esquerda: imagem visual (referência).  
-- Direita: imagem térmica com retângulo de seleção.  
-Ajuste o retângulo para cobrir a planta e clique em **Confirmar**. O sistema salva os dados e passa para a próxima amostra.
+### Passo 2 — Revisão de segmentação (opcional)
+Caso a segmentação automática tenha falhado para alguma imagem:
+
+1. Na mesma aba, desça até a seção "Revisão de segmentação".
+2. Escolha a amostra com problema no menu suspenso.
+3. Ative a chave "Ajustar segmentação manualmente".
+4. Use a ferramenta de pincel:
+   - Desenhar: pinta de verde as áreas da planta que o sistema ignorou.
+   - Apagar: remove as áreas verdes que o sistema selecionou por engano.
+
+5. Ajuste o tamanho do pincel conforme a necessidade.
+6. Clique em "Salvar nova máscara e recalcular dados".
 
 ### Passo 3 — Dashboard e análise
 Abra a aba **Dashboard completo** para visualizar:
@@ -109,5 +120,6 @@ Na seção **Relatório e exportação** do dashboard:
 
 ## 5. Observações e dicas
 - Use nomes consistentes para evitar falhas no pareamento automático.  
-- Recomenda‑se imagens com boa resolução para melhores resultados (essa dica será útil para a próxima versão de segmentação automática).
+- Recomenda‑se imagens com boa resolução para melhores resultados.
 - Se você subir uma imagem thermal sem a correspondente visual (ou vice-versa), o sistema avisará e ela não será processada.
+- Atenção ao período, o sistema aplica filtros de processamento diferentes para o dia e para a noite devido à mudança de iluminação. Uma nomenclatura incorreta nesse campo causará a falha da segmentação automática.
