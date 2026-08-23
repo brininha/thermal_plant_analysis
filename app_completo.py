@@ -306,7 +306,7 @@ with tab_edit:
              st.subheader("Revisão de segmentação")
              st.info("Caso a segmentação automática tenha falhado para alguma imagem, selecione-a abaixo para corrigir o recorte.")
              
-             opcoes_edicao = {f"{d['meta']['Planta']} - {d['meta']['Tratamento']} - {d['meta']['Periodo']} - R{d['meta']['Replica']}": i for i, d in enumerate(st.session_state['dados'])}
+             opcoes_edicao = {f"ID: {d['meta']['Planta']} | Var: {d['meta']['Variedade']} | Trat: {d['meta']['Tratamento']} | Amb: {d['meta']['Ambiente']} | Per: {d['meta']['Periodo']} | R{d['meta']['Replica']}": i for i, d in enumerate(st.session_state['dados'])}
              escolha_edicao = st.selectbox("Escolha a amostra para revisar/editar:", ["Selecione..."] + list(opcoes_edicao.keys()))
              
              if escolha_edicao != "Selecione...":
@@ -494,7 +494,7 @@ with tab_dash:
         st.markdown("### Inspeção de pixels")
         st.info("Selecione uma amostra para visualizar o mapa térmico radiométrico completo da área recortada. Passe o mouse sobre os pixels para ver a temperatura exata.")
         
-        opcoes = {f"{d['meta']['Planta']} - {d['meta']['Tratamento']} - {d['meta']['Periodo']} - R{d['meta']['Replica']}": i for i, d in enumerate(st.session_state['dados'])}
+        opcoes = {f"ID: {d['meta']['Planta']} | Var: {d['meta']['Variedade']} | Trat: {d['meta']['Tratamento']} | Amb: {d['meta']['Ambiente']} | Per: {d['meta']['Periodo']} | R{d['meta']['Replica']}": i for i, d in enumerate(st.session_state['dados'])}
         escolha = st.selectbox("Escolha a amostra para inspecionar:", list(opcoes.keys()))
         
         if escolha:
