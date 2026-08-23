@@ -139,6 +139,16 @@ Vermelho: (R=255, G=0, B=0)
 | ![alt text](images/image-11.png) |
 | <small><b>Demonstração da falha na segmentação automática mesclada.</b> (A) O recorte manual preliminar define a região de interesse. (B) A máscara binária gerada pelo algoritmo automático falha em delimitar o objeto devido às bordas difusas da imagem térmica interpolada. (C) O resultado final apresenta recorte impreciso, incluindo áreas do fundo e/ou excluindo partes da folhagem, comprovando a inviabilidade da automação nesta resolução.</small> |
 
+### 1.4 Versão 4.0: extração de metadados e segmentação manual
+<small>Data de lançamento: 09/02/2026 | Data de descontinuação: 23/08/2026 </small>
+> Status: Substituída por limitações do processo de recorte, embora a lógica central de extração térmica tenha sido preservada e otimizada.
+
+&nbsp;&nbsp;&nbsp;Após a constatação de que a análise visual de cores não refletia as temperaturas reais, essa versão estabeleceu um marco no projeto: o software passou a extrair a matriz bruta de sensores diretamente dos metadados da imagem térmica. O uso da ferramenta `flirimageextractor` garantiu o acesso a valores absolutos de medição, eliminando as distorções visuais.  
+
+&nbsp;&nbsp;&nbsp;Contudo, como as tentativas anteriores de automatizar o recorte haviam falhado, o isolamento da área foliar regrediu para um processo estritamente manual. O pesquisador precisava utilizar um componente interativo para desenhar caixas delimitadoras sobre a folhagem de cada amostra. Como a biblioteca visual não exportava as coordenadas exatas da seleção, o sistema foi forçado a executar uma etapa pesada de processamento: o *template matching*. O algoritmo precisava varrer a matriz térmica inteira procurando o padrão visual do recorte para encontrar as coordenadas originais e calcular as estatísticas.  
+
+&nbsp;&nbsp;&nbsp;Embora a obtenção do dado térmico tenha se tornado cientificamente válida, a arquitetura se mostrou ineficiente em alguns aspectos. A exigência de recortar manualmente dezenas ou centenas de imagens criava um gargalo operacional. Além disso, o quadrado rígido de seleção de área acabava englobando partes indesejadas do fundo entre as folhas finas do arroz, evidenciando a necessidade de uma máscara mais personalizada e da retomada da automação.
+
 ---
 
 ## 2 Versão atual: extração de dados radiométricos
