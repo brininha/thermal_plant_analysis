@@ -5,7 +5,7 @@ plotly
 flirimageextractor
 opencv-python-headless
 Pillow
-streamlit-cropper
+streamlit-drawable-canvas
 fpdf
 matplotlib
 scipy

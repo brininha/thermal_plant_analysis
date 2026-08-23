@@ -9,6 +9,7 @@ from PIL import Image, ExifTags
 from fpdf import FPDF
 import tempfile
 import os
+from streamlit_drawable_canvas import st_canvas
 
 # biblioteca radiométrica para extrair a temperatura dos metadados
 try:
@@ -21,7 +22,7 @@ st.set_page_config(page_title="Análise térmica de plantas", layout="wide", pag
 
 # funções utilitárias
 def carregar_imagem(uploaded_file):
-    """Carrega a imagem visualmente, respeitando a rotação EXIF."""
+    """carrega a imagem visualmente, respeitando a rotação EXIF."""
     uploaded_file.seek(0)
     try:
         image = Image.open(uploaded_file)
@@ -40,7 +41,7 @@ def carregar_imagem(uploaded_file):
         return Image.open(uploaded_file)
 
 def organizar_pares(uploaded_files):
-    """Agrupa as imagens em pares visual + térmica."""
+    """agrupa as imagens em pares visual + térmica."""
     pares = {}
     for arq in uploaded_files:
         nome = arq.name.lower()
@@ -58,14 +59,23 @@ def organizar_pares(uploaded_files):
         
         if pares[id_comum]['meta'] is None:
             partes = id_comum.split('_')
-            # ex de nome de arquivo: P01_27_Controle_Dia_R1_thermal.jpg
-            if len(partes) >= 5:
+            
+            if len(partes) == 5:
                 pares[id_comum]['meta'] = {
                     'Planta': partes[0], 'Ambiente': partes[1], 'Tratamento': partes[2],
-                    'Periodo': partes[3], 'Replica': partes[4] if len(partes)>4 else '1'
+                    'Periodo': partes[3], 'Replica': partes[4], 'Variedade': 'N/A'
+                }
+
+            elif len(partes) >= 6:
+                pares[id_comum]['meta'] = {
+                    'Planta': partes[0], 'Ambiente': partes[1], 'Tratamento': partes[2],
+                    'Periodo': partes[3], 'Replica': partes[4], 'Variedade': partes[5]
                 }
             else:
-                pares[id_comum]['meta'] = {'Planta': id_comum, 'Ambiente': 'N/A', 'Tratamento': 'N/A', 'Periodo': 'N/A', 'Replica': '1'}
+                pares[id_comum]['meta'] = {
+                    'Planta': id_comum, 'Ambiente': 'N/A', 'Tratamento': 'N/A', 
+                    'Periodo': 'N/A', 'Replica': '1', 'Variedade': 'N/A'
+                }
     
     return [p for p in pares.values() if p['thermal'] is not None]
 
@@ -144,7 +154,7 @@ def processar_termica_radiometrica(img_vis_pil, img_therm_pil, arquivo_original_
         matriz_termica = flir.get_thermal_np()
     except Exception as e:
         st.error(f"Erro ao ler dados radiométricos: {e}")
-        return None, None, None
+        return None, None, None, None, None, None, None
     finally:
         if os.path.exists(tmp_path): os.remove(tmp_path)
 
@@ -170,7 +180,7 @@ def processar_termica_radiometrica(img_vis_pil, img_therm_pil, arquivo_original_
     pixels_validos = matriz_termica[mask_planta == 255]
 
     if len(pixels_validos) == 0:
-        return None, None, None
+        return None, None, None, None, None, None, None
 
     stats = {
         'Temp_Media': np.mean(pixels_validos),
@@ -185,7 +195,7 @@ def processar_termica_radiometrica(img_vis_pil, img_therm_pil, arquivo_original_
     matriz_termica_dash = matriz_termica.copy()
     matriz_termica_dash[mask_planta == 0] = np.nan 
     
-    return stats, img_recortada_pil, matriz_termica_dash
+    return stats, img_recortada_pil, matriz_termica_dash, mask_planta, matriz_termica, img_therm_arr, img_vis_arr
 
 # geração de pdf
 
@@ -215,37 +225,37 @@ def gerar_pdf_final(lista_dados):
     pdf.set_auto_page_break(auto=True, margin=15)
     
     with tempfile.TemporaryDirectory() as tmpdir:
-        for item in lista_dados:
+        for i, item in enumerate(lista_dados):
             pdf.add_page()
             meta = item['meta']
             stats = item['stats']
             
             pdf.set_font('Arial', 'B', 12)
             pdf.set_fill_color(240, 240, 240)
-            pdf.cell(0, 10, f"ID: {meta['Planta']} | Trat: {meta['Tratamento']} | Amb: {meta['Ambiente']}", 1, 1, 'L', fill=True)
+            pdf.cell(0, 10, f"ID: {meta['Planta']} | Variedade: {meta['Variedade']} | Trat.: {meta['Tratamento']} | Amb.: {meta['Ambiente']} | Período: {meta['Periodo']} | Réplica: {meta['Replica']}", 1, 1, 'L', fill=True)
             
             y_img = pdf.get_y() + 10 
             
             # imagem visual
             if item['img_visual']:
-                path_v = os.path.join(tmpdir, f"v_{meta['Planta']}.jpg")
+                path_v = os.path.join(tmpdir, f"v_{i}.jpg")
                 item['img_visual'].save(path_v)
                 pdf.image(path_v, x=10, y=y_img, w=60, h=50)
                 pdf.text(10, y_img - 3, "Imagem visual")
             
             # imagem térmica
-            path_t = os.path.join(tmpdir, f"t_{meta['Planta']}.jpg")
+            path_t = os.path.join(tmpdir, f"t_{i}.jpg")
             item['img_termica_crop'].save(path_t)
             pdf.image(path_t, x=75, y=y_img, w=60, h=50)
             pdf.text(75, y_img - 3, "Recorte analisado")
 
             # mapa de calor radiométrico
             if item['raw_matrix'] is not None:
-                path_h = os.path.join(tmpdir, f"h_{meta['Planta']}.png")
+                path_h = os.path.join(tmpdir, f"h_{i}.png")
                 gerar_grafico_matplotlib(item['raw_matrix'], path_h)
                 pdf.image(path_h, x=140, y=y_img, w=60, h=50)
                 pdf.text(140, y_img - 3, "Dados reais")
-            
+                        
             pdf.set_y(y_img + 60)
             pdf.set_font('Arial', 'B', 10)
             pdf.cell(0, 8, "Estatísticas da área selecionada", 0, 1, 'L')
@@ -290,6 +300,96 @@ with tab_edit:
     if pares:
         if len(st.session_state['dados']) == len(pares):
              st.success(f"Todas as {len(pares)} amostras foram processadas! Verifique os resultados no Dashboard.")
+             
+             # secao de revisao manual
+             st.divider()
+             st.subheader("Revisão de segmentação")
+             st.info("Caso a segmentação automática tenha falhado para alguma imagem, selecione-a abaixo para corrigir o recorte.")
+             
+             opcoes_edicao = {f"ID: {d['meta']['Planta']} | Var: {d['meta']['Variedade']} | Trat: {d['meta']['Tratamento']} | Amb: {d['meta']['Ambiente']} | Per: {d['meta']['Periodo']} | R{d['meta']['Replica']}": i for i, d in enumerate(st.session_state['dados'])}
+             escolha_edicao = st.selectbox("Escolha a amostra para revisar/editar:", ["Selecione..."] + list(opcoes_edicao.keys()))
+             
+             if escolha_edicao != "Selecione...":
+                 idx = opcoes_edicao[escolha_edicao]
+                 dado_atual = st.session_state['dados'][idx]
+                 
+                 img_vis_arr = dado_atual['img_vis_arr']
+                 mask_atual = dado_atual['mask_planta']
+                 
+                 img_mascarada_auto = cv2.bitwise_and(img_vis_arr, img_vis_arr, mask=mask_atual)
+                 st.image(img_mascarada_auto, caption="Resultado automático atual", use_column_width=True)
+                 
+                 editar = st.toggle("Ajustar segmentação manualmente")
+                 mascara_final = mask_atual.copy()
+                 
+                 if editar:
+                     col1, col2 = st.columns([1, 3])
+                     with col1:
+                         modo_desenho = st.radio("Ferramenta:", ("Desenhar", "Apagar"))
+                         tamanho_pincel = st.slider("Tamanho do pincel", 1, 50, 20)
+                         stroke_color = "#00FF00" if modo_desenho == "Desenhar" else "#FF0000"
+                     
+                     with col2:
+                         # cria uma copia da imagem visual para o overlay
+                         overlay = img_vis_arr.copy()
+                         
+                         overlay[mask_atual == 255] = [255, 0, 255]
+                         
+                         img_fundo_destaque = cv2.addWeighted(img_vis_arr, 0.7, overlay, 0.3, 0)
+                         bg_image = Image.fromarray(img_fundo_destaque)
+                         
+                         canvas_result = st_canvas(
+                             fill_color="rgba(255, 165, 0, 0.3)",
+                             stroke_width=tamanho_pincel,
+                             stroke_color=stroke_color,
+                             background_image=bg_image,
+                             update_streamlit=True,
+                             height=bg_image.height,
+                             width=bg_image.width,
+                             drawing_mode="freedraw",
+                             key=f"canvas_{idx}"
+                         )
+                         
+                     if canvas_result.image_data is not None:
+                         desenho_rgba = canvas_result.image_data
+                         canal_r, canal_g, canal_alpha = desenho_rgba[:, :, 0], desenho_rgba[:, :, 1], desenho_rgba[:, :, 3]
+                         
+                         mascara_adicionar = (canal_g > 150) & (canal_r < 100) & (canal_alpha > 0)
+                         mascara_remover = (canal_r > 150) & (canal_g < 100) & (canal_alpha > 0)
+                         
+                         mascara_final[mascara_adicionar] = 255
+                         mascara_final[mascara_remover] = 0
+                         
+                     if st.button("Salvar nova máscara e recalcular dados", type="primary"):
+                         # recalcula as estatisticas e as matrizes com a nova mascara
+                         mask_nova = mascara_final.astype(np.uint8)
+                         mat_raw = dado_atual['matriz_termica_raw']
+                         therm_arr = dado_atual['img_therm_arr']
+                         
+                         pixels_validos = mat_raw[mask_nova == 255]
+                         if len(pixels_validos) > 0:
+                             novo_stats = {
+                                 'Temp_Media': np.mean(pixels_validos),
+                                 'Temp_Max': np.max(pixels_validos),
+                                 'Temp_Min': np.min(pixels_validos),
+                                 'Desvio': np.std(pixels_validos)
+                             }
+                             
+                             img_recortada_arr = cv2.bitwise_and(therm_arr, therm_arr, mask=mask_nova)
+                             mat_dash = mat_raw.copy()
+                             mat_dash[mask_nova == 0] = np.nan
+                             
+                             # atualiza o session_state
+                             st.session_state['dados'][idx]['stats'] = novo_stats
+                             st.session_state['dados'][idx]['img_termica_crop'] = Image.fromarray(img_recortada_arr)
+                             st.session_state['dados'][idx]['raw_matrix'] = mat_dash
+                             st.session_state['dados'][idx]['mask_planta'] = mask_nova
+                             
+                             st.success("Dados radiométricos atualizados!")
+                             st.rerun()
+             # fim da secao de revisao
+             
+             st.divider()
              if st.button("Reprocessar todas as imagens"):
                  st.session_state['dados'] = []
                  st.rerun()
@@ -298,32 +398,49 @@ with tab_edit:
             st.info("Confira os pares abaixo. O sistema usará a segmentação automática baseada nos metadados para extrair as temperaturas.")
 
             # criamos uma área de scroll ou lista para os pares
-            for i, par in enumerate(pares):
+            st.divider()
+            st.subheader("Pré-visualização das Imagens")
+
+            # define quantos pares mostrar por vez
+            itens_por_pagina = 5
+            total_paginas = max(1, (len(pares) - 1) // itens_por_pagina + 1)
+
+            # cria o controle de paginacao visual
+            if total_paginas > 1:
+                pagina_atual = st.slider("Página", min_value=1, max_value=total_paginas, value=1)
+            else:
+                pagina_atual = 1
+
+            # fatia a lista matematica para a pagina atual
+            inicio = (pagina_atual - 1) * itens_por_pagina
+            fim = inicio + itens_por_pagina
+            pares_exibicao = pares[inicio:fim]
+
+            # exibe apenas a fatia selecionada
+            for i, par in enumerate(pares_exibicao):
                 meta = par['meta']
                 
-                # container para agrupar o par e a legenda
                 with st.container(border=True):
                     st.markdown(f"**ID: {meta['Planta']}** | Tratamento: {meta['Tratamento']} | Período: {meta['Periodo']}")
                     
                     col_v, col_t = st.columns(2)
                     
-                    # carregamento das duas imagens do par
                     img_vis_preview = carregar_imagem(par['visual']) if par['visual'] else None
                     img_therm_preview = carregar_imagem(par['thermal'])
                     
                     with col_v:
                         if img_vis_preview:
-                            st.image(img_vis_preview, caption="Referência visual", use_container_width=True)
+                            st.image(img_vis_preview, caption="Referência visual", use_column_width=True)
                         else:
                             st.warning("Imagem visual não encontrada para este par.")
                             
                     with col_t:
-                        st.image(img_therm_preview, caption="Imagem térmica", use_container_width=True)
+                        st.image(img_therm_preview, caption="Imagem térmica", use_column_width=True)
 
             st.divider()
             
             # botão de processamento em lote
-            if st.button("Processar tudo", type="primary", use_container_width=True):
+            if st.button("Processar tudo", type="primary"):
                 barra_progresso = st.progress(0)
                 status_texto = st.empty()
                 
@@ -338,7 +455,7 @@ with tab_edit:
                     
                     # chama a sua lógica de extração de dados brutos (matriz de sensores)
                     # conforme definido no seu pipeline radiométrico
-                    stats, img_proc, raw_matrix = processar_termica_radiometrica(
+                    stats, img_proc, raw_matrix, mask_planta, matriz_termica_raw, img_therm_arr, img_vis_arr = processar_termica_radiometrica(
                         img_vis_full, img_therm_full, par['thermal'], meta['Periodo']
                     )
                     
@@ -348,7 +465,11 @@ with tab_edit:
                             'stats': stats, 
                             'img_visual': img_vis_full, 
                             'img_termica_crop': img_proc,
-                            'raw_matrix': raw_matrix 
+                            'raw_matrix': raw_matrix,
+                            'mask_planta': mask_planta,
+                            'matriz_termica_raw': matriz_termica_raw,
+                            'img_therm_arr': img_therm_arr,
+                            'img_vis_arr': img_vis_arr
                         })
                     
                     barra_progresso.progress((i + 1) / len(pares))
@@ -373,7 +494,7 @@ with tab_dash:
         st.markdown("### Inspeção de pixels")
         st.info("Selecione uma amostra para visualizar o mapa térmico radiométrico completo da área recortada. Passe o mouse sobre os pixels para ver a temperatura exata.")
         
-        opcoes = {f"{d['meta']['Planta']} ({d['meta']['Tratamento']})": i for i, d in enumerate(st.session_state['dados'])}
+        opcoes = {f"ID: {d['meta']['Planta']} | Var: {d['meta']['Variedade']} | Trat: {d['meta']['Tratamento']} | Amb: {d['meta']['Ambiente']} | Per: {d['meta']['Periodo']} | R{d['meta']['Replica']}": i for i, d in enumerate(st.session_state['dados'])}
         escolha = st.selectbox("Escolha a amostra para inspecionar:", list(opcoes.keys()))
         
         if escolha:
@@ -407,7 +528,7 @@ with tab_dash:
                 hovertemplate="%{customdata}<extra></extra>"
             )
             
-            st.plotly_chart(fig_pixel, width='stretch')
+            st.plotly_chart(fig_pixel, use_container_width=True)
 
         st.divider()
 
@@ -435,7 +556,7 @@ with tab_dash:
                 color_discrete_sequence=px.colors.qualitative.Pastel # cor restaurada
             )
             fig_bar.update_layout(yaxis_title="Temp média (°C)")
-            st.plotly_chart(fig_bar, width='stretch')
+            st.plotly_chart(fig_bar, use_container_width=True)
 
             st.divider()
             
@@ -453,7 +574,7 @@ with tab_dash:
                         color_continuous_scale='RdBu_r', # escala restaurada
                         origin='lower'
                     )
-                    st.plotly_chart(fig_heat, width='stretch')
+                    st.plotly_chart(fig_heat, use_container_width=True)
                 except:
                     st.warning("Dados insuficientes para gerar o heatmap.")
 
@@ -468,7 +589,7 @@ with tab_dash:
                     color_discrete_sequence=px.colors.qualitative.Pastel # cor restaurada
                 )
                 fig_box.update_layout(yaxis_title="Temp (°C)")
-                st.plotly_chart(fig_box, width='stretch')
+                st.plotly_chart(fig_box, use_container_width=True)
 
         else:
             st.warning("Sem dados para os filtros selecionados.")
@@ -481,12 +602,12 @@ with tab_dash:
         # baixar csv dos dados obtidos
         with cd1:
             csv = df.to_csv(index=False).encode('utf-8')
-            st.download_button("Baixar tabela (CSV)", csv, "dados_radiometricos.csv", "text/csv", width='stretch')
+            st.download_button("Baixar tabela (CSV)", csv, "dados_radiometricos.csv", "text/csv", use_container_width=True)
         # baixar pdf dos dados obtidos
         with cd2:
-            if st.button("Gerar relatório PDF completo", width='stretch'):
+            if st.button("Gerar relatório PDF completo", use_container_width=True):
                 with st.spinner("Gerando PDF..."):
                     pdf_b = gerar_pdf_final(st.session_state['dados'])
-                    st.download_button("Baixar PDF", pdf_b, "relatorio_tecnico.pdf", "application/pdf", width='stretch')
+                    st.download_button("Baixar PDF", pdf_b, "relatorio_tecnico.pdf", "application/pdf", use_container_width=True)
     else:
         st.info("Processe as imagens primeiro na aba 'Processamento de amostras'.")
