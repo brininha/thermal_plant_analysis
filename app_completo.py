@@ -154,7 +154,7 @@ def processar_termica_radiometrica(img_vis_pil, img_therm_pil, arquivo_original_
         matriz_termica = flir.get_thermal_np()
     except Exception as e:
         st.error(f"Erro ao ler dados radiométricos: {e}")
-        return None, None, None
+        return None, None, None, None, None, None, None
     finally:
         if os.path.exists(tmp_path): os.remove(tmp_path)
 
@@ -180,7 +180,7 @@ def processar_termica_radiometrica(img_vis_pil, img_therm_pil, arquivo_original_
     pixels_validos = matriz_termica[mask_planta == 255]
 
     if len(pixels_validos) == 0:
-        return None, None, None
+        return None, None, None, None, None, None, None
 
     stats = {
         'Temp_Media': np.mean(pixels_validos),
