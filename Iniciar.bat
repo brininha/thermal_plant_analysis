@@ -24,7 +24,8 @@ call .venv\Scripts\activate
 pip install -r requirements.txt >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo [AVISO] Tentando instalar dependencias novamente...
-    pip install streamlit pandas plotly pillow opencv-python-headless numpy matplotlib
+    echo [AVISO] Tentando instalar dependencias novamente...
+    pip install streamlit pandas plotly pillow opencv-python-headless numpy matplotlib streamlit-drawable-canvas flirimageextractor
 )
 
 echo.
@@ -34,7 +35,7 @@ echo ==========================================
 echo.
 
 REM Configura o caminho do ExifTool para a pasta atual
-set EXIFTOOL_PATH=%CD%\exiftool.exe
+set PATH=%CD%;%PATH%
 
 REM Roda o Streamlit
 streamlit run app_completo.py --server.headless true
