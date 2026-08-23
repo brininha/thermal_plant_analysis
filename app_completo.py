@@ -327,7 +327,7 @@ with tab_edit:
                      with col1:
                          modo_desenho = st.radio("Ferramenta:", ("Desenhar", "Apagar"))
                          tamanho_pincel = st.slider("Tamanho do pincel", 1, 50, 20)
-                         stroke_color = "#00FF00" if modo_desenho == "Desenhar" else "transparent"
+                         stroke_color = "#00FF00" if modo_desenho == "Desenhar" else "#FF0000"
                      
                      with col2:
                          # cria uma copia da imagem visual para o overlay
