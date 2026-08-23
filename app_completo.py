@@ -333,7 +333,7 @@ with tab_edit:
                          # cria uma copia da imagem visual para o overlay
                          overlay = img_vis_arr.copy()
                          
-                         overlay[mask_atual == 255] = [0, 255, 0]
+                         overlay[mask_atual == 255] = [255, 0, 255]
                          
                          img_fundo_destaque = cv2.addWeighted(img_vis_arr, 0.7, overlay, 0.3, 0)
                          bg_image = Image.fromarray(img_fundo_destaque)
