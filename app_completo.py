@@ -232,7 +232,7 @@ def gerar_pdf_final(lista_dados):
             
             pdf.set_font('Arial', 'B', 12)
             pdf.set_fill_color(240, 240, 240)
-            pdf.cell(0, 10, f"ID: {meta['Planta']} | Tratamento: {meta['Tratamento']} | Ambiente: {meta['Ambiente']} | Período: {meta['Periodo']} | R{meta['Replica']}", 1, 1, 'L', fill=True)
+            pdf.cell(0, 10, f"ID: {meta['Planta']} | Variedade: {meta['Variedade']} | Tratamento: {meta['Tratamento']} | Ambiente: {meta['Ambiente']} | Período: {meta['Periodo']} | R{meta['Replica']}", 1, 1, 'L', fill=True)
             
             y_img = pdf.get_y() + 10 
             
