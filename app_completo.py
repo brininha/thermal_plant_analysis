@@ -232,7 +232,7 @@ def gerar_pdf_final(lista_dados):
             
             pdf.set_font('Arial', 'B', 12)
             pdf.set_fill_color(240, 240, 240)
-            pdf.cell(0, 10, f"ID: {meta['Planta']} | Trat: {meta['Tratamento']} | Amb: {meta['Ambiente']} | Período: {meta['Periodo']} | R{meta['Replica']}", 1, 1, 'L', fill=True)
+            pdf.cell(0, 10, f"ID: {meta['Planta']} | Tratamento: {meta['Tratamento']} | Ambiente: {meta['Ambiente']} | Período: {meta['Periodo']} | R{meta['Replica']}", 1, 1, 'L', fill=True)
             
             y_img = pdf.get_y() + 10 
             
@@ -303,7 +303,7 @@ with tab_edit:
              
              # secao de revisao manual
              st.divider()
-             st.subheader("Revisão de Segmentação (Correção Manual)")
+             st.subheader("Revisão de segmentação")
              st.info("Caso a segmentação automática tenha falhado para alguma imagem, selecione-a abaixo para corrigir o recorte.")
              
              opcoes_edicao = {f"{d['meta']['Planta']} - {d['meta']['Tratamento']} - {d['meta']['Periodo']} - R{d['meta']['Replica']}": i for i, d in enumerate(st.session_state['dados'])}
@@ -317,7 +317,7 @@ with tab_edit:
                  mask_atual = dado_atual['mask_planta']
                  
                  img_mascarada_auto = cv2.bitwise_and(img_vis_arr, img_vis_arr, mask=mask_atual)
-                 st.image(img_mascarada_auto, caption="Resultado Automático Atual", use_column_width=True)
+                 st.image(img_mascarada_auto, caption="Resultado automático atual", use_column_width=True)
                  
                  editar = st.toggle("Ajustar segmentação manualmente")
                  mascara_final = mask_atual.copy()
@@ -325,9 +325,9 @@ with tab_edit:
                  if editar:
                      col1, col2 = st.columns([1, 3])
                      with col1:
-                         modo_desenho = st.radio("Ferramenta:", ("Desenhar (Adicionar)", "Apagar (Remover)"))
-                         tamanho_pincel = st.slider("Tamanho do Pincel", 5, 50, 20)
-                         stroke_color = "#00FF00" if modo_desenho == "Desenhar (Adicionar)" else "#FF0000"
+                         modo_desenho = st.radio("Ferramenta:", ("Desenhar", "Apagar"))
+                         tamanho_pincel = st.slider("Tamanho do pincel", 1, 50, 20)
+                         stroke_color = "#00FF00" if modo_desenho == "Desenhar" else "transparent"
                      
                      with col2:
                          # cria uma copia da imagem visual para o overlay
@@ -398,16 +398,33 @@ with tab_edit:
             st.info("Confira os pares abaixo. O sistema usará a segmentação automática baseada nos metadados para extrair as temperaturas.")
 
             # criamos uma área de scroll ou lista para os pares
-            for i, par in enumerate(pares):
+            st.divider()
+            st.subheader("Pré-visualização das Imagens")
+
+            # define quantos pares mostrar por vez
+            itens_por_pagina = 5
+            total_paginas = max(1, (len(pares) - 1) // itens_por_pagina + 1)
+
+            # cria o controle de paginacao visual
+            if total_paginas > 1:
+                pagina_atual = st.slider("Página", min_value=1, max_value=total_paginas, value=1)
+            else:
+                pagina_atual = 1
+
+            # fatia a lista matematica para a pagina atual
+            inicio = (pagina_atual - 1) * itens_por_pagina
+            fim = inicio + itens_por_pagina
+            pares_exibicao = pares[inicio:fim]
+
+            # exibe apenas a fatia selecionada
+            for i, par in enumerate(pares_exibicao):
                 meta = par['meta']
                 
-                # container para agrupar o par e a legenda
                 with st.container(border=True):
                     st.markdown(f"**ID: {meta['Planta']}** | Tratamento: {meta['Tratamento']} | Período: {meta['Periodo']}")
                     
                     col_v, col_t = st.columns(2)
                     
-                    # carregamento das duas imagens do par
                     img_vis_preview = carregar_imagem(par['visual']) if par['visual'] else None
                     img_therm_preview = carregar_imagem(par['thermal'])
                     
@@ -423,7 +440,7 @@ with tab_edit:
             st.divider()
             
             # botão de processamento em lote
-            if st.button("Processar tudo", type="primary", use_container_width=True):
+            if st.button("Processar tudo", type="primary"):
                 barra_progresso = st.progress(0)
                 status_texto = st.empty()
                 
